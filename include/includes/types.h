@@ -18,7 +18,7 @@
 
 #ifndef HIPARTI_TYPES_H
 #define HIPARTI_TYPES_H
-
+#include <absl/numeric/int128.h>
 #include <stdint.h>
 
 /**
@@ -100,7 +100,8 @@ typedef uint64_t ptiNnzIndex;
 #define HIPARTI_PRI_NNZ_INDEX PRIu64
 #define HIPARTI_SCN_NNZ_INDEX PRIu64
 
-typedef unsigned __int128 ptiMortonIndex;
+
+typedef unsigned absl::int128 ptiMortonIndex;
 // typedef __uint128_t ptiMortonIndex;
 
 
