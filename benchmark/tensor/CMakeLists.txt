@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.2)  # CMake 3.2 supports CUDA 7.0
 project(HiParTI)
 
 if(USE_CUDA)
-    file(GLOB_RECURSE BENCH_SRCS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "*.c" "*.cu")
+    file(GLOB_RECURSE BENCH_SRCS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "*.c" "*.cpp" "*.cu")
 else()
-    file(GLOB_RECURSE BENCH_SRCS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "*.c")
+    file(GLOB_RECURSE BENCH_SRCS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "*.c" "*.cpp")
 endif()
 
 
@@ -15,7 +15,7 @@ foreach(BENCH_SRC IN LISTS BENCH_SRCS)
     else()
         add_executable("${BENCH_EXE}" "${BENCH_SRC}")
     endif()
-    set_target_properties("${BENCH_EXE}" PROPERTIES C_STANDARD 99)
+#    set_target_properties("${BENCH_EXE}" PROPERTIES C_STANDARD 99)
     if(BUILD_STATIC)
         target_link_libraries("${BENCH_EXE}" HiParTI_s)
     else()

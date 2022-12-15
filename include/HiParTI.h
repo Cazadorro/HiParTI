@@ -19,12 +19,12 @@
 #ifndef HIPARTI_H
 #define HIPARTI_H
 
-#include <stddef.h>
-#include <stdio.h>
-#include <inttypes.h>
-#include <math.h>
-#include <stdbool.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdio>
+#include <cinttypes>
+#include <cmath>
+#include <cstdbool>
+#include <cstdint>
 #ifdef HIPARTI_USE_OPENMP
     #include <omp.h>
 #endif
@@ -33,7 +33,7 @@
 #endif
 
 #ifdef __cplusplus
-extern "C" {
+//extern "C" {
 #endif
 
 
@@ -92,7 +92,7 @@ extern "C" {
 
 
 #ifdef __cplusplus
-}
+//}
 #endif
 
 #endif

@@ -169,12 +169,14 @@ if(USE_MAGMA)
     link_libraries(magma) # not linking mkl libraries
 endif()
 
-if(USE_OpenBLAS)
-    find_package(OpenBLAS REQUIRED)
-    add_definitions(-DHIPARTI_USE_OpenBLAS)
-    include_directories(${OpenBLAS_INCLUDE_DIRS})
-    link_libraries(${OpenBLAS_LIBRARIES})
-endif()
+#if(USE_OpenBLAS)
+#    find_package(OpenBLAS REQUIRED)
+#    add_definitions(-DHIPARTI_USE_OpenBLAS)
+#    include_directories(${OpenBLAS_INCLUDE_DIRS})
+#    link_libraries(${OpenBLAS_LIBRARIES})
+#    message("HELLOOOO ${OpenBLAS_LIBRARIES}")
+#    message("HELLOOOO ${OpenBLAS_INCLUDE_DIRS}")
+#endif()
 
 if(USE_MKL)
     # find_package(MKL REQUIRED)
@@ -199,6 +201,43 @@ endif()
 include_directories("include")
 link_libraries("m")
 add_subdirectory(external/abseil)
+
+find_package(unofficial-getopt-win32 REQUIRED COMPONENTS unofficial::getopt-win32::getopt)
+
+## https://stackoverflow.com/questions/32183975/how-to-print-all-the-properties-of-a-target-in-cmake/56738858#56738858
+## https://stackoverflow.com/a/56738858/3743145
+
+## Get all properties that cmake supports
+execute_process(COMMAND cmake --help-property-list OUTPUT_VARIABLE CMAKE_PROPERTY_LIST)
+## Convert command output into a CMake list
+STRING(REGEX REPLACE ";" "\\\\;" CMAKE_PROPERTY_LIST "${CMAKE_PROPERTY_LIST}")
+STRING(REGEX REPLACE "\n" ";" CMAKE_PROPERTY_LIST "${CMAKE_PROPERTY_LIST}")
+
+list(REMOVE_DUPLICATES CMAKE_PROPERTY_LIST)
+
+function(print_target_properties tgt)
+    if(NOT TARGET ${tgt})
+        message("There is no target named '${tgt}'")
+        return()
+    endif()
+
+    foreach (prop ${CMAKE_PROPERTY_LIST})
+        string(REPLACE "<CONFIG>" "${CMAKE_BUILD_TYPE}" prop ${prop})
+        get_target_property(propval ${tgt} ${prop})
+        if (propval)
+            message ("${tgt} ${prop} = ${propval}")
+        endif()
+    endforeach(prop)
+endfunction(print_target_properties)
+
+get_target_property(GETOPT_MAIN_LOC unofficial::getopt-win32::getopt LOCATION)
+get_filename_component(GETOPT_MAIN_LOC ${GETOPT_MAIN_LOC} PATH)
+set_target_properties(unofficial::getopt-win32::getopt PROPERTIES INCLUDE_DIRECTORIES "${GETOPT_MAIN_LOC}/../../include/")
+print_target_properties(absl::numeric)
+print_target_properties(unofficial::getopt-win32::getopt)
+print_target_properties(OpenBLAS)
+include_directories("${GETOPT_MAIN_LOC}/../../include/")
+
 if(USE_CUDA)
     file(GLOB_RECURSE HiParTI_SRC RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "src/*.c" "src/*.cu" "src/*.h" "include/*.h")
     # MESSAGE( STATUS "HiParTI_SRC:         " ${HiParTI_SRC} )
@@ -224,11 +263,25 @@ endif()
 
 if(BUILD_SHARED)
 #    set_target_properties(HiParTI PROPERTIES C_STANDARD 99)
-    target_link_libraries(HiParTI PUBLIC absl::numeric)
+    target_link_libraries(HiParTI PUBLIC absl::numeric unofficial::getopt-win32::getopt)
 endif()
 if(BUILD_STATIC)
 #    set_target_properties(HiParTI_s PROPERTIES C_STANDARD 99)
-    target_link_libraries(HiParTI_s PUBLIC absl::numeric)
+    target_link_libraries(HiParTI_s PUBLIC absl::numeric unofficial::getopt-win32::getopt)
 endif()
 
-#add_subdirectory("benchmark")
+if(USE_OpenBLAS)
+    find_package(OpenBLAS REQUIRED)
+    add_definitions(-DHIPARTI_USE_OpenBLAS)
+    if(BUILD_SHARED)
+        target_link_libraries(HiParTI PUBLIC openblas_64_shared)
+    endif()
+    if(BUILD_STATIC)
+        target_link_libraries(HiParTI_s PUBLIC openblas_64_static)
+    endif()
+endif()
+
+#get_target_property(TEST_INCLUDES unofficial::getopt-win32::getopt INCLUDE_DIRECTORIES)
+
+#        message("${TEST_INCLUDES}")
+add_subdirectory("benchmark")

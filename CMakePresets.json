@@ -21,7 +21,9 @@
         "USE_CUDA": "OFF",
         "USE_LAPACK": "OFF",
         "BUILD_STATIC": "ON",
-        "BUILD_SHARED": "OFF"
+        "BUILD_SHARED": "OFF",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/external/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static"
       }
     },
     {

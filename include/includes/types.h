@@ -101,7 +101,7 @@ typedef uint64_t ptiNnzIndex;
 #define HIPARTI_SCN_NNZ_INDEX PRIu64
 
 
-typedef unsigned absl::int128 ptiMortonIndex;
+typedef absl::int128 ptiMortonIndex;
 // typedef __uint128_t ptiMortonIndex;
 
 
