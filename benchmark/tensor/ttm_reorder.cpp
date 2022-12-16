@@ -35,7 +35,7 @@ void print_usage(char ** argv) {
     printf("\n");
 }
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char ** argv) {
     char ifname[1000];
     FILE *fo = NULL;
     ptiSparseTensor X, spY;
@@ -84,7 +84,7 @@ int main(int argc, char const *argv[]) {
             printf("input file: %s\n", optarg); fflush(stdout);
             break;
         case 'o':
-            fo = fopen(optarg, "aw");
+            fo = fopen(optarg, "a+");
             ptiAssert(fo != NULL);
             printf("output file: %s\n", optarg); fflush(stdout);
             break;

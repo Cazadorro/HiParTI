@@ -45,10 +45,12 @@ int main(int argc, char ** argv) {
     ptiSparseTensor tsr;
     ptiMatrix ** U;
     ptiSparseTensorHiCOO hitsr;
-    ptiElementIndex sb_bits;
-    ptiElementIndex sk_bits;
-    ptiElementIndex sc_bits;
+    ptiElementIndex sb_bits = 4;
+    ptiElementIndex sk_bits = 4;
+    ptiElementIndex sc_bits = 4;
 
+    char * fi_name;
+    char * fo_name;
     ptiIndex mode = 0;
     ptiIndex R = 16;
     int cuda_dev_id = -2;
@@ -89,10 +91,12 @@ int main(int argc, char ** argv) {
         }
         switch(c) {
         case 'i':
+            fi_name = optarg;
             fi = fopen(optarg, "r");
             ptiAssert(fi != NULL);
             break;
         case 'o':
+            fo_name = optarg;
             fo = fopen(optarg, "w");
             ptiAssert(fo != NULL);
             break;
@@ -132,7 +136,7 @@ int main(int argc, char ** argv) {
     }
 
 
-    ptiAssert(ptiLoadSparseTensor(&tsr, 1, fi) == 0);
+    ptiAssert(ptiLoadSparseTensor(&tsr, 1, fi_name) == 0);
     // ptiSparseTensorSortIndex(&tsr, 1);
     fclose(fi);
     ptiSparseTensorStatus(&tsr, stdout);

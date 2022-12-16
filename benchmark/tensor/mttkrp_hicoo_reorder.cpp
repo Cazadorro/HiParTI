@@ -45,12 +45,14 @@ int main(int argc, char ** argv) {
     printf("mttkrp_hicoo_renumber: \n");
 
     FILE *fi = NULL, *fo = NULL;
+    char * fi_name;
+    char * fo_name;
     ptiSparseTensor tsr;
     ptiMatrix ** U;
     ptiSparseTensorHiCOO hitsr;
-    ptiElementIndex sb_bits;
-    ptiElementIndex sk_bits;
-    ptiElementIndex sc_bits;
+    ptiElementIndex sb_bits = 4;
+    ptiElementIndex sk_bits = 4;
+    ptiElementIndex sc_bits = 4;
 
     ptiIndex mode = HIPARTI_INDEX_MAX;
     ptiIndex R = 16;
@@ -103,11 +105,13 @@ int main(int argc, char ** argv) {
         }
         switch(c) {
         case 'i':
+            fi_name = optarg;
             fi = fopen(optarg, "r");
             ptiAssert(fi != NULL);
             break;
         case 'o':
-            fo = fopen(optarg, "aw");
+            fo_name = optarg;
+            fo = fopen(optarg, "a+");
             ptiAssert(fo != NULL);
             break;
         case 'b':
@@ -156,7 +160,7 @@ int main(int argc, char ** argv) {
     if (renumber == 1)
         printf("niters_renum: %d\n\n", niters_renum);
 
-    ptiAssert(ptiLoadSparseTensor(&tsr, 1, fi) == 0);
+    ptiAssert(ptiLoadSparseTensor(&tsr, 1, fi_name) == 0);
     // ptiSparseTensorSortIndex(&tsr, 1);
     fclose(fi);
     ptiSparseTensorStatus(&tsr, stdout);

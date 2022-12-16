@@ -53,9 +53,9 @@ int ptiLoadSparseMatrix(ptiSparseMatrix *mtx, ptiIndex start_index, FILE *fid)
     mtx->nnz = (ptiNnzIndex) num_nonzeros;
 
     retval = ptiNewIndexVector(&mtx->rowind, mtx->nnz, mtx->nnz);
-    pti_CheckOSError(iores < 0, "SpMtx Load");
+//    pti_CheckOSError(iores < 0, "SpMtx Load");
     retval = ptiNewIndexVector(&mtx->colind, mtx->nnz, mtx->nnz);
-    pti_CheckOSError(iores < 0, "SpMtx Load");
+//    pti_CheckOSError(iores < 0, "SpMtx Load");
     retval = ptiNewValueVector(&mtx->values, mtx->nnz, mtx->nnz);
     pti_CheckError(retval, "SpMtx Load", NULL);
 
