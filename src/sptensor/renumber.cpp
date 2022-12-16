@@ -1,7 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <time.h>
+#include <cstdio>
+#include <cstdlib>
+#include <ctime>
+#include "timer.h"
 
 #include "HiParTI.h"
 #include "sptensor.h"

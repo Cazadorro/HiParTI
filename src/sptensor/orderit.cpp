@@ -1,8 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <time.h>
-
+#include <cstdio>
+#include <cstdlib>
+#include <ctime>
+#include "timer.h"
 #include "HiParTI.h"
 #include "renumber.h"
 
@@ -15,7 +14,7 @@ void orderforHiCOObfsLike(ptiIndex const nm, ptiNnzIndex const nnz, ptiIndex * n
 
 static double u_seconds(void)
 {
-    struct timeval tp;
+    timeval tp;
     
     gettimeofday(&tp, NULL);
     
@@ -781,7 +780,7 @@ void orderDim(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, ptiI
     t1 =u_seconds()-t0;
     printf("dim %u create time %.2f\n", dim, t1);
     
-    rowPtrs = realloc(rowPtrs, (sizeof(ptiNnzIndex) * (mtxNrows+2)));
+    rowPtrs = reinterpret_cast<ptiNnzIndex*>(realloc(rowPtrs, (sizeof(ptiNnzIndex) * (mtxNrows+2))));
     cprm = (ptiIndex *) malloc(sizeof(ptiIndex) * (ndims[dim]+1));
     invcprm = (ptiIndex *) malloc(sizeof(ptiIndex) * (ndims[dim]+1));
     saveOrgIds = (ptiIndex *) malloc(sizeof(ptiIndex) * (ndims[dim]+1));

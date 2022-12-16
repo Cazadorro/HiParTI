@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
             printf("output file: %s\n", optarg); fflush(stdout);
             break;
         case 'm':
-            sscanf(optarg, "%"HIPARTI_SCN_INDEX, &mode);
+            sscanf(optarg, "%" HIPARTI_SCN_INDEX, &mode);
             break;
         case '?':   /* invalid option */
         case 'h':

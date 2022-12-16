@@ -35,12 +35,12 @@ int ptiSparseTensorToSemiSparseTensor(ptiSemiSparseTensor *dest, const ptiSparse
         pti_CheckError(PTIERR_SHAPE_MISMATCH, "SpTns -> SspTns", "nmodes < 2");
     }
     dest->nmodes = nmodes;
-    dest->ndims = malloc(nmodes * sizeof *dest->ndims);
+    dest->ndims = reinterpret_cast<ptiIndex *>(malloc(nmodes * sizeof *dest->ndims));
     pti_CheckOSError(!dest->ndims, "SpTns -> SspTns");
     memcpy(dest->ndims, src->ndims, nmodes * sizeof *dest->ndims);
     dest->mode = mode;
     dest->nnz = src->nnz;
-    dest->inds = malloc(nmodes * sizeof *dest->inds);
+    dest->inds = reinterpret_cast<ptiIndexVector *>(malloc(nmodes * sizeof *dest->inds));
     pti_CheckOSError(!dest->inds, "SpTns -> SspTns");
     for(i = 0; i < nmodes; ++i) {
         if(i != mode) {

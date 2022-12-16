@@ -64,16 +64,16 @@ static void pti_RotateMode(ptiSparseTensor *tsr) {
 int pti_StartSplitSparseTensor(pti_SplitHandle *handle, const ptiSparseTensor *tsr, const ptiIndex max_size_by_mode[]) {
     int result = 0;
 
-    *handle = malloc(sizeof **handle);
+    *handle = reinterpret_cast<pti_SplitHandle>(malloc(sizeof **handle));
     (*handle)->nsplits = 0;
-    (*handle)->tsr = malloc((tsr->nmodes + 1) * sizeof (ptiSparseTensor));
+    (*handle)->tsr = reinterpret_cast<ptiSparseTensor *>(malloc((tsr->nmodes + 1) * sizeof (ptiSparseTensor)));
     pti_CheckOSError((*handle)->tsr == NULL, "SpTns Splt");
-    (*handle)->max_size_by_mode = malloc(5 * tsr->nmodes * sizeof (ptiIndex));
+    (*handle)->max_size_by_mode = reinterpret_cast<size_t *>(malloc(5 * tsr->nmodes * sizeof (ptiIndex)));
     pti_CheckOSError((*handle)->max_size_by_mode == NULL, "SpTns Splt");
     (*handle)->inds_low = (*handle)->max_size_by_mode + tsr->nmodes;
     (*handle)->inds_high = (*handle)->max_size_by_mode + 2 * tsr->nmodes;
     (*handle)->level = 0;
-    (*handle)->resume_branch = malloc((tsr->nmodes + 1) * sizeof (int));
+    (*handle)->resume_branch = reinterpret_cast<int *>(malloc((tsr->nmodes + 1) * sizeof (int)));
     pti_CheckOSError((*handle)->resume_branch == NULL, "SpTns Splt");
     (*handle)->cut_idx = (*handle)->max_size_by_mode + 3 * tsr->nmodes;
     (*handle)->cut_low = (*handle)->max_size_by_mode + 4 * tsr->nmodes;

@@ -221,7 +221,7 @@ int ptiPreprocessSparseMatrix(
         /* Sort blocks in each kernel in Morton-order */
         ptiSparseMatrixSortIndexMorton(mtx, 1, k_begin, k_end, sb_bits);
 #if PARTI_DEBUG == 3
-    printf("Kernel %"HIPARTI_PRI_NNZ_INDEX ": Sorted by ptiSparseTensorSortIndexMorton.\n", k);
+    printf("Kernel %" HIPARTI_PRI_NNZ_INDEX ": Sorted by ptiSparseTensorSortIndexMorton.\n", k);
     ptiAssert(ptiDumpSparseTensor(tsr, 0, stdout) == 0);
 #endif
     }
@@ -286,7 +286,7 @@ int ptiSparseMatrixPartition(
 
         /* Loop nonzeros in each kernel */
         for(ptiNnzIndex z = k_begin; z < k_end; ++z) {
-            // printf("z: %"HIPARTI_PRI_NNZ_INDEX "\n", z);
+            // printf("z: %" HIPARTI_PRI_NNZ_INDEX "\n", z);
 
             block_coord[0] = mtx->rowind.data[z];    // first nonzero indices
             block_coord[1] = mtx->colind.data[z];    // first nonzero indices
@@ -330,7 +330,7 @@ int ptiSparseMatrixPartition(
                 ++ nb;
                 ne = 1;              
             } // End new block
-            // printf("nb: %"HIPARTI_PRI_NNZ_INDEX ", ne: %"HIPARTI_PRI_NNZ_INDEX "\n\n", nb, ne);
+            // printf("nb: %" HIPARTI_PRI_NNZ_INDEX ", ne: %" HIPARTI_PRI_NNZ_INDEX "\n\n", nb, ne);
 
         }   // End z loop
     }   // End k loop

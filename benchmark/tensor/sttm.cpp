@@ -77,13 +77,13 @@ int main(int argc, char *argv[]) {
             printf("output file: %s\n", optarg); fflush(stdout);
             break;
         case 'm':
-            sscanf(optarg, "%"HIPARTI_SCN_INDEX, &mode);
+            sscanf(optarg, "%" HIPARTI_SCN_INDEX, &mode);
             break;
         case 'd':
             sscanf(optarg, "%d", &dev_id);
             break;
         case 'r':
-            sscanf(optarg, "%u"HIPARTI_SCN_INDEX, &R);
+            sscanf(optarg, "%u" HIPARTI_SCN_INDEX, &R);
             break;
         case '?':   /* invalid option */
         case 'h':
@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
     }
-    printf("mode: %"HIPARTI_PRI_INDEX "\n", mode);
+    printf("mode: %" HIPARTI_PRI_INDEX "\n", mode);
     printf("dev_id: %d\n", dev_id);
 
     /* Load a sparse tensor from file */

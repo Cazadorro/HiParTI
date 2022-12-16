@@ -756,7 +756,7 @@ int ptiOmpMTTKRPHiCOOKernels_MatrixTiling_Scheduled(
     double avg_nnzs = hitsr->nnz / (double)tk;
     // printf("thread_nnzs:\n");
     for(int i = 0; i < tk; ++i) {
-        // printf("%"HIPARTI_PRI_NNZ_INDEX", ", thread_nnzs[i]);
+        // printf("%" HIPARTI_PRI_NNZ_INDEX", ", thread_nnzs[i]);
         sum_nnzs += thread_nnzs[i];
         if(min_nnzs > thread_nnzs[i])
             min_nnzs = thread_nnzs[i];
@@ -766,7 +766,7 @@ int ptiOmpMTTKRPHiCOOKernels_MatrixTiling_Scheduled(
     }
     // printf("\n");
     std_nnzs = sqrt(std_nnzs / tk);
-    printf("min_nnzs: %"HIPARTI_PRI_NNZ_INDEX ", max_nnzs: %"HIPARTI_PRI_NNZ_INDEX ", avg_nnzs: %.1lf, std_nnzs: %.1lf\n", min_nnzs, max_nnzs, avg_nnzs, std_nnzs);
+    printf("min_nnzs: %" HIPARTI_PRI_NNZ_INDEX ", max_nnzs: %" HIPARTI_PRI_NNZ_INDEX ", avg_nnzs: %.1lf, std_nnzs: %.1lf\n", min_nnzs, max_nnzs, avg_nnzs, std_nnzs);
     ptiAssert(sum_nnzs == hitsr->nnz);
 
     free(thread_nnzs);
@@ -971,7 +971,7 @@ int ptiOmpMTTKRPHiCOOKernels_MatrixTiling_Scheduled_Balanced(
     double avg_nnzs = hitsr->nnz / (double)tk;
     // printf("thread_nnzs:\n");
     for(int i = 0; i < tk; ++i) {
-        // printf("%"HIPARTI_PRI_NNZ_INDEX", ", thread_nnzs[i]);
+        // printf("%" HIPARTI_PRI_NNZ_INDEX", ", thread_nnzs[i]);
         sum_nnzs += thread_nnzs[i];
         if(min_nnzs > thread_nnzs[i])
             min_nnzs = thread_nnzs[i];
@@ -981,7 +981,7 @@ int ptiOmpMTTKRPHiCOOKernels_MatrixTiling_Scheduled_Balanced(
     }
     // printf("\n");
     std_nnzs = sqrt(std_nnzs / tk);
-    printf("min_nnzs: %"HIPARTI_PRI_NNZ_INDEX ", max_nnzs: %"HIPARTI_PRI_NNZ_INDEX ", avg_nnzs: %.1lf, std_nnzs: %.1lf\n", min_nnzs, max_nnzs, avg_nnzs, std_nnzs);
+    printf("min_nnzs: %" HIPARTI_PRI_NNZ_INDEX ", max_nnzs: %" HIPARTI_PRI_NNZ_INDEX ", avg_nnzs: %.1lf, std_nnzs: %.1lf\n", min_nnzs, max_nnzs, avg_nnzs, std_nnzs);
     ptiAssert(sum_nnzs == hitsr->nnz);
 
     free(thread_nnzs);
@@ -1099,7 +1099,7 @@ int ptiOmpMTTKRPHiCOOKernels_3D_MatrixTiling_Scheduled(
     double avg_nnzs = hitsr->nnz / (double)tk;
     // printf("thread_nnzs:\n");
     for(int i = 0; i < tk; ++i) {
-        // printf("%"HIPARTI_PRI_NNZ_INDEX", ", thread_nnzs[i]);
+        // printf("%" HIPARTI_PRI_NNZ_INDEX", ", thread_nnzs[i]);
         sum_nnzs += thread_nnzs[i];
         if(min_nnzs > thread_nnzs[i])
             min_nnzs = thread_nnzs[i];
@@ -1109,7 +1109,7 @@ int ptiOmpMTTKRPHiCOOKernels_3D_MatrixTiling_Scheduled(
     }
     // printf("\n");
     std_nnzs = sqrt(std_nnzs / tk);
-    printf("min_nnzs: %"HIPARTI_PRI_NNZ_INDEX ", max_nnzs: %"HIPARTI_PRI_NNZ_INDEX ", avg_nnzs: %.1lf, std_nnzs: %.1lf\n", min_nnzs, max_nnzs, avg_nnzs, std_nnzs);
+    printf("min_nnzs: %" HIPARTI_PRI_NNZ_INDEX ", max_nnzs: %" HIPARTI_PRI_NNZ_INDEX ", avg_nnzs: %.1lf, std_nnzs: %.1lf\n", min_nnzs, max_nnzs, avg_nnzs, std_nnzs);
     ptiAssert(sum_nnzs == hitsr->nnz);
 
     free(thread_nnzs);
@@ -1277,7 +1277,7 @@ int ptiOmpMTTKRPHiCOOKernels_3D_MatrixTiling_Scheduled_Balanced(
     double avg_nnzs = hitsr->nnz / (double)tk;
     // printf("thread_nnzs:\n");
     for(int i = 0; i < tk; ++i) {
-        // printf("%"HIPARTI_PRI_NNZ_INDEX", ", thread_nnzs[i]);
+        // printf("%" HIPARTI_PRI_NNZ_INDEX", ", thread_nnzs[i]);
         sum_nnzs += thread_nnzs[i];
         if(min_nnzs > thread_nnzs[i])
             min_nnzs = thread_nnzs[i];
@@ -1287,7 +1287,7 @@ int ptiOmpMTTKRPHiCOOKernels_3D_MatrixTiling_Scheduled_Balanced(
     }
     // printf("\n");
     std_nnzs = sqrt(std_nnzs / tk);
-    printf("min_nnzs: %"HIPARTI_PRI_NNZ_INDEX ", max_nnzs: %"HIPARTI_PRI_NNZ_INDEX ", avg_nnzs: %.1lf, std_nnzs: %.1lf\n", min_nnzs, max_nnzs, avg_nnzs, std_nnzs);
+    printf("min_nnzs: %" HIPARTI_PRI_NNZ_INDEX ", max_nnzs: %" HIPARTI_PRI_NNZ_INDEX ", avg_nnzs: %.1lf, std_nnzs: %.1lf\n", min_nnzs, max_nnzs, avg_nnzs, std_nnzs);
     ptiAssert(sum_nnzs == hitsr->nnz);
 
     free(thread_nnzs);
@@ -1433,7 +1433,7 @@ int ptiOmpMTTKRPHiCOOKernels_MatrixTiling_Scheduled_Reduce(
     double avg_nnzs = hitsr->nnz / (double)tk;
     // printf("thread_nnzs:\n");
     for(int i = 0; i < tk; ++i) {
-        // printf("%"HIPARTI_PRI_NNZ_INDEX", ", thread_nnzs[i]);
+        // printf("%" HIPARTI_PRI_NNZ_INDEX", ", thread_nnzs[i]);
         sum_nnzs += thread_nnzs[i];
         if(min_nnzs > thread_nnzs[i])
             min_nnzs = thread_nnzs[i];
@@ -1443,7 +1443,7 @@ int ptiOmpMTTKRPHiCOOKernels_MatrixTiling_Scheduled_Reduce(
     }
     // printf("\n");
     std_nnzs = sqrt(std_nnzs / tk);
-    printf("min_nnzs: %"HIPARTI_PRI_NNZ_INDEX ", max_nnzs: %"HIPARTI_PRI_NNZ_INDEX ", avg_nnzs: %.1lf, std_nnzs: %.1lf\n", min_nnzs, max_nnzs, avg_nnzs, std_nnzs);
+    printf("min_nnzs: %" HIPARTI_PRI_NNZ_INDEX ", max_nnzs: %" HIPARTI_PRI_NNZ_INDEX ", avg_nnzs: %.1lf, std_nnzs: %.1lf\n", min_nnzs, max_nnzs, avg_nnzs, std_nnzs);
     ptiAssert(sum_nnzs == hitsr->nnz);
 
     free(thread_nnzs);
@@ -1663,7 +1663,7 @@ int ptiOmpMTTKRPHiCOOKernels_MatrixTiling_Scheduled_Reduce_Balanced(
     double avg_nnzs = hitsr->nnz / (double)tk;
     // printf("thread_nnzs:\n");
     for(int i = 0; i < tk; ++i) {
-        // printf("%"HIPARTI_PRI_NNZ_INDEX", ", thread_nnzs[i]);
+        // printf("%" HIPARTI_PRI_NNZ_INDEX", ", thread_nnzs[i]);
         sum_nnzs += thread_nnzs[i];
         if(min_nnzs > thread_nnzs[i])
             min_nnzs = thread_nnzs[i];
@@ -1673,7 +1673,7 @@ int ptiOmpMTTKRPHiCOOKernels_MatrixTiling_Scheduled_Reduce_Balanced(
     }
     // printf("\n");
     std_nnzs = sqrt(std_nnzs / tk);
-    printf("min_nnzs: %"HIPARTI_PRI_NNZ_INDEX ", max_nnzs: %"HIPARTI_PRI_NNZ_INDEX ", avg_nnzs: %.1lf, std_nnzs: %.1lf\n", min_nnzs, max_nnzs, avg_nnzs, std_nnzs);
+    printf("min_nnzs: %" HIPARTI_PRI_NNZ_INDEX ", max_nnzs: %" HIPARTI_PRI_NNZ_INDEX ", avg_nnzs: %.1lf, std_nnzs: %.1lf\n", min_nnzs, max_nnzs, avg_nnzs, std_nnzs);
     ptiAssert(sum_nnzs == hitsr->nnz);
 
     free(thread_nnzs);
@@ -1804,7 +1804,7 @@ int ptiOmpMTTKRPHiCOOKernels_3D_MatrixTiling_Scheduled_Reduce(
     double avg_nnzs = hitsr->nnz / (double)tk;
     // printf("thread_nnzs:\n");
     for(int i = 0; i < tk; ++i) {
-        // printf("%"HIPARTI_PRI_NNZ_INDEX", ", thread_nnzs[i]);
+        // printf("%" HIPARTI_PRI_NNZ_INDEX", ", thread_nnzs[i]);
         sum_nnzs += thread_nnzs[i];
         if(min_nnzs > thread_nnzs[i])
             min_nnzs = thread_nnzs[i];
@@ -1814,7 +1814,7 @@ int ptiOmpMTTKRPHiCOOKernels_3D_MatrixTiling_Scheduled_Reduce(
     }
     // printf("\n");
     std_nnzs = sqrt(std_nnzs / tk);
-    printf("min_nnzs: %"HIPARTI_PRI_NNZ_INDEX ", max_nnzs: %"HIPARTI_PRI_NNZ_INDEX ", avg_nnzs: %.1lf, std_nnzs: %.1lf\n", min_nnzs, max_nnzs, avg_nnzs, std_nnzs);
+    printf("min_nnzs: %" HIPARTI_PRI_NNZ_INDEX ", max_nnzs: %" HIPARTI_PRI_NNZ_INDEX ", avg_nnzs: %.1lf, std_nnzs: %.1lf\n", min_nnzs, max_nnzs, avg_nnzs, std_nnzs);
     ptiAssert(sum_nnzs == hitsr->nnz);
 
     free(thread_nnzs);
@@ -1996,7 +1996,7 @@ int ptiOmpMTTKRPHiCOOKernels_3D_MatrixTiling_Scheduled_Reduce_Balanced(
     double avg_nnzs = hitsr->nnz / (double)tk;
     // printf("thread_nnzs:\n");
     for(int i = 0; i < tk; ++i) {
-        // printf("%"HIPARTI_PRI_NNZ_INDEX", ", thread_nnzs[i]);
+        // printf("%" HIPARTI_PRI_NNZ_INDEX", ", thread_nnzs[i]);
         sum_nnzs += thread_nnzs[i];
         if(min_nnzs > thread_nnzs[i])
             min_nnzs = thread_nnzs[i];
@@ -2006,7 +2006,7 @@ int ptiOmpMTTKRPHiCOOKernels_3D_MatrixTiling_Scheduled_Reduce_Balanced(
     }
     // printf("\n");
     std_nnzs = sqrt(std_nnzs / tk);
-    printf("min_nnzs: %"HIPARTI_PRI_NNZ_INDEX ", max_nnzs: %"HIPARTI_PRI_NNZ_INDEX ", avg_nnzs: %.1lf, std_nnzs: %.1lf\n", min_nnzs, max_nnzs, avg_nnzs, std_nnzs);
+    printf("min_nnzs: %" HIPARTI_PRI_NNZ_INDEX ", max_nnzs: %" HIPARTI_PRI_NNZ_INDEX ", avg_nnzs: %.1lf, std_nnzs: %.1lf\n", min_nnzs, max_nnzs, avg_nnzs, std_nnzs);
     ptiAssert(sum_nnzs == hitsr->nnz);
 
     free(thread_nnzs);

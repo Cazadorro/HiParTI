@@ -39,7 +39,7 @@ int ptiNewValueVector(ptiValueVector *vec, ptiNnzIndex len, ptiNnzIndex cap) {
     }
     vec->len = len;
     vec->cap = cap;
-    vec->data = malloc(cap * sizeof *vec->data);
+    vec->data = reinterpret_cast<ptiValue *>(malloc(cap * sizeof *vec->data));
     pti_CheckOSError(!vec->data, "ValVec New");
     memset(vec->data, 0, cap * sizeof *vec->data);
     return 0;
@@ -111,7 +111,7 @@ int ptiAppendValueVector(ptiValueVector *vec, ptiValue const value) {
 #else
         ptiNnzIndex newcap = vec->len+1;
 #endif
-        ptiValue *newdata = realloc(vec->data, newcap * sizeof *vec->data);
+        ptiValue *newdata = reinterpret_cast<ptiValue *>(realloc(vec->data, newcap * sizeof *vec->data));
         pti_CheckOSError(!newdata, "ValVec Append");
         vec->cap = newcap;
         vec->data = newdata;
@@ -133,7 +133,7 @@ int ptiAppendValueVectorWithVector(ptiValueVector *vec, const ptiValueVector *ap
     ptiNnzIndex newlen = vec->len + append_vec->len;
     if(vec->cap <= newlen) {
         ptiNnzIndex newcap = vec->cap + append_vec->cap;
-        ptiValue *newdata = realloc(vec->data, newcap * sizeof *vec->data);
+        ptiValue *newdata = reinterpret_cast<ptiValue *>(realloc(vec->data, newcap * sizeof *vec->data));
         pti_CheckOSError(!newdata, "ValVec Append ValVec");
         vec->cap = newcap;
         vec->data = newdata;
@@ -159,7 +159,7 @@ int ptiAppendValueVectorWithVector(ptiValueVector *vec, const ptiValueVector *ap
 int ptiResizeValueVector(ptiValueVector *vec, ptiNnzIndex const size) {
     ptiNnzIndex newcap = size < 2 ? 2 : size;
     if(newcap != vec->cap) {
-        ptiValue *newdata = realloc(vec->data, newcap * sizeof *vec->data);
+        ptiValue *newdata = reinterpret_cast<ptiValue *>(realloc(vec->data, newcap * sizeof *vec->data));
         pti_CheckOSError(!newdata, "ValVec Resize");
         vec->len = size;
         vec->cap = newcap;
@@ -202,7 +202,7 @@ int ptiNewIndexVector(ptiIndexVector *vec, ptiNnzIndex len, ptiNnzIndex cap) {
     }
     vec->len = len;
     vec->cap = cap;
-    vec->data = malloc(cap * sizeof *vec->data);
+    vec->data = reinterpret_cast<ptiIndex *>(malloc(cap * sizeof *vec->data));
     pti_CheckOSError(!vec->data, "IdxVec New");
     memset(vec->data, 0, cap * sizeof *vec->data);
     return 0;
@@ -260,7 +260,7 @@ int ptiAppendIndexVector(ptiIndexVector *vec, ptiIndex const value) {
 #else
         ptiNnzIndex newcap = vec->len+1;
 #endif
-        ptiIndex *newdata = realloc(vec->data, newcap * sizeof *vec->data);
+        ptiIndex *newdata = reinterpret_cast<ptiIndex *>(realloc(vec->data, newcap * sizeof *vec->data));
         pti_CheckOSError(!newdata, "IdxVec Append");
         vec->cap = newcap;
         vec->data = newdata;
@@ -282,7 +282,7 @@ int ptiAppendIndexVectorWithVector(ptiIndexVector *vec, const ptiIndexVector *ap
     ptiNnzIndex newlen = vec->len + append_vec->len;
     if(vec->cap <= newlen) {
         ptiNnzIndex newcap = vec->cap + append_vec->cap;
-        ptiIndex *newdata = realloc(vec->data, newcap * sizeof *vec->data);
+        ptiIndex *newdata = reinterpret_cast<ptiIndex *>(realloc(vec->data, newcap * sizeof *vec->data));
         pti_CheckOSError(!newdata, "IdxVec Append IdxVec");
         vec->cap = newcap;
         vec->data = newdata;
@@ -308,7 +308,7 @@ int ptiAppendIndexVectorWithVector(ptiIndexVector *vec, const ptiIndexVector *ap
 int ptiResizeIndexVector(ptiIndexVector *vec, ptiNnzIndex const size) {
     ptiNnzIndex newcap = size < 2 ? 2 : size;
     if(newcap != vec->cap) {
-        ptiIndex *newdata = realloc(vec->data, newcap * sizeof *vec->data);
+        ptiIndex *newdata = reinterpret_cast<ptiIndex *>(realloc(vec->data, newcap * sizeof *vec->data));
         pti_CheckOSError(!newdata, "IdxVec Resize");
         vec->len = size;
         vec->cap = newcap;
@@ -351,7 +351,7 @@ int ptiNewElementIndexVector(ptiElementIndexVector *vec, ptiNnzIndex len, ptiNnz
     }
     vec->len = len;
     vec->cap = cap;
-    vec->data = malloc(cap * sizeof *vec->data);
+    vec->data = reinterpret_cast<ptiElementIndex *>(malloc(cap * sizeof *vec->data));
     pti_CheckOSError(!vec->data, "EleIdxVec New");
     memset(vec->data, 0, cap * sizeof *vec->data);
     return 0;
@@ -401,7 +401,7 @@ int ptiAppendElementIndexVector(ptiElementIndexVector *vec, ptiElementIndex cons
 #else
         ptiNnzIndex newcap = vec->len+1;
 #endif
-        ptiElementIndex *newdata = realloc(vec->data, newcap * sizeof *vec->data);
+        ptiElementIndex *newdata = reinterpret_cast<ptiElementIndex *>(realloc(vec->data, newcap * sizeof *vec->data));
         pti_CheckOSError(!newdata, "EleIdxVec Append");
         vec->cap = newcap;
         vec->data = newdata;
@@ -423,7 +423,7 @@ int ptiAppendElementIndexVectorWithVector(ptiElementIndexVector *vec, const ptiE
     ptiNnzIndex newlen = vec->len + append_vec->len;
     if(vec->cap <= newlen) {
         ptiNnzIndex newcap = vec->cap + append_vec->cap;
-        ptiElementIndex *newdata = realloc(vec->data, newcap * sizeof *vec->data);
+        ptiElementIndex *newdata = reinterpret_cast<ptiElementIndex *>(realloc(vec->data, newcap * sizeof *vec->data));
         pti_CheckOSError(!newdata, "EleIdxVec Append EleIdxVec");
         vec->cap = newcap;
         vec->data = newdata;
@@ -449,7 +449,7 @@ int ptiAppendElementIndexVectorWithVector(ptiElementIndexVector *vec, const ptiE
 int ptiResizeElementIndexVector(ptiElementIndexVector *vec, ptiNnzIndex const size) {
     ptiNnzIndex newcap = size < 2 ? 2 : size;
     if(newcap != vec->cap) {
-        ptiElementIndex *newdata = realloc(vec->data, newcap * sizeof *vec->data);
+        ptiElementIndex *newdata = reinterpret_cast<ptiElementIndex *>(realloc(vec->data, newcap * sizeof *vec->data));
         pti_CheckOSError(!newdata, "EleIdxVec Resize");
         vec->len = size;
         vec->cap = newcap;
@@ -492,7 +492,7 @@ int ptiNewBlockIndexVector(ptiBlockIndexVector *vec, ptiNnzIndex len, ptiNnzInde
     }
     vec->len = len;
     vec->cap = cap;
-    vec->data = malloc(cap * sizeof *vec->data);
+    vec->data = reinterpret_cast<ptiBlockIndex *>(malloc(cap * sizeof *vec->data));
     pti_CheckOSError(!vec->data, "BlkIdxVec New");
     memset(vec->data, 0, cap * sizeof *vec->data);
     return 0;
@@ -542,7 +542,7 @@ int ptiAppendBlockIndexVector(ptiBlockIndexVector *vec, ptiBlockIndex const valu
 #else
         ptiNnzIndex newcap = vec->len+1;
 #endif
-        ptiBlockIndex *newdata = realloc(vec->data, newcap * sizeof *vec->data);
+        ptiBlockIndex *newdata = reinterpret_cast<ptiBlockIndex *>(realloc(vec->data, newcap * sizeof *vec->data));
         pti_CheckOSError(!newdata, "BlkIdxVec Append");
         vec->cap = newcap;
         vec->data = newdata;
@@ -564,7 +564,7 @@ int ptiAppendBlockIndexVectorWithVector(ptiBlockIndexVector *vec, const ptiBlock
     ptiNnzIndex newlen = vec->len + append_vec->len;
     if(vec->cap <= newlen) {
         ptiNnzIndex newcap = vec->cap + append_vec->cap;
-        ptiBlockIndex *newdata = realloc(vec->data, newcap * sizeof *vec->data);
+        ptiBlockIndex *newdata = reinterpret_cast<ptiBlockIndex *>(realloc(vec->data, newcap * sizeof *vec->data));
         pti_CheckOSError(!newdata, "BlkIdxVec Append BlkIdxVec");
         vec->cap = newcap;
         vec->data = newdata;
@@ -590,7 +590,7 @@ int ptiAppendBlockIndexVectorWithVector(ptiBlockIndexVector *vec, const ptiBlock
 int ptiResizeBlockIndexVector(ptiBlockIndexVector *vec, ptiNnzIndex const size) {
     ptiNnzIndex newcap = size < 2 ? 2 : size;
     if(newcap != vec->cap) {
-        ptiBlockIndex *newdata = realloc(vec->data, newcap * sizeof *vec->data);
+        ptiBlockIndex *newdata = reinterpret_cast<ptiBlockIndex *>(realloc(vec->data, newcap * sizeof *vec->data));
         pti_CheckOSError(!newdata, "BlkIdxVec Resize");
         vec->len = size;
         vec->cap = newcap;
@@ -633,7 +633,7 @@ int ptiNewNnzIndexVector(ptiNnzIndexVector *vec, ptiNnzIndex len, ptiNnzIndex ca
     }
     vec->len = len;
     vec->cap = cap;
-    vec->data = malloc(cap * sizeof *vec->data);
+    vec->data = reinterpret_cast<ptiNnzIndex *>(malloc(cap * sizeof *vec->data)) ;
     pti_CheckOSError(!vec->data, "NnzIdxVec New");
     memset(vec->data, 0, cap * sizeof *vec->data);
     return 0;
@@ -683,7 +683,7 @@ int ptiAppendNnzIndexVector(ptiNnzIndexVector *vec, ptiNnzIndex const value) {
 #else
         ptiNnzIndex newcap = vec->len+1;
 #endif
-        ptiNnzIndex *newdata = realloc(vec->data, newcap * sizeof *vec->data);
+        ptiNnzIndex *newdata = reinterpret_cast<ptiNnzIndex *>(realloc(vec->data, newcap * sizeof *vec->data));
         pti_CheckOSError(!newdata, "NnzIdxVec Append");
         vec->cap = newcap;
         vec->data = newdata;
@@ -705,7 +705,7 @@ int ptiAppendNnzIndexVectorWithVector(ptiNnzIndexVector *vec, const ptiNnzIndexV
     ptiNnzIndex newlen = vec->len + append_vec->len;
     if(vec->cap <= newlen) {
         ptiNnzIndex newcap = vec->cap + append_vec->cap;
-        ptiNnzIndex *newdata = realloc(vec->data, newcap * sizeof *vec->data);
+        ptiNnzIndex *newdata = reinterpret_cast<ptiNnzIndex *>(realloc(vec->data, newcap * sizeof *vec->data));
         pti_CheckOSError(!newdata, "NnzIdxVec Append NnzIdxVec");
         vec->cap = newcap;
         vec->data = newdata;
@@ -731,7 +731,7 @@ int ptiAppendNnzIndexVectorWithVector(ptiNnzIndexVector *vec, const ptiNnzIndexV
 int ptiResizeNnzIndexVector(ptiNnzIndexVector *vec, ptiNnzIndex const size) {
     ptiNnzIndex newcap = size < 2 ? 2 : size;
     if(newcap != vec->cap) {
-        ptiNnzIndex *newdata = realloc(vec->data, newcap * sizeof *vec->data);
+        ptiNnzIndex *newdata = reinterpret_cast<ptiNnzIndex *>(realloc(vec->data, newcap * sizeof *vec->data));
         pti_CheckOSError(!newdata, "NnzIdxVec Resize");
         vec->len = size;
         vec->cap = newcap;

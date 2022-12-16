@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
             sscanf(optarg, "%d", &sort);
             break;
         case 'b':
-            sscanf(optarg, "%"HIPARTI_SCN_ELEMENT_INDEX, &block_bits);
+            sscanf(optarg, "%" HIPARTI_SCN_ELEMENT_INDEX, &block_bits);
             break;
         default:
             abort();

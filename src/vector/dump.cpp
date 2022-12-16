@@ -31,10 +31,10 @@
 int ptiDumpElementIndexVector(ptiElementIndexVector *vec, FILE *fp) {
     int iores;
     ptiNnzIndex len = vec->len;
-    iores = fprintf(fp, "ptiElementIndexVector length: %"HIPARTI_PRI_NNZ_INDEX "\n", len);
+    iores = fprintf(fp, "ptiElementIndexVector length: %" HIPARTI_PRI_NNZ_INDEX "\n", len);
     pti_CheckOSError(iores < 0, "EleIdxVec Dump");
     for(ptiNnzIndex i=0; i < len; ++i) {
-        iores = fprintf(fp, "%"HIPARTI_PRI_ELEMENT_INDEX "\t", vec->data[i]);
+        iores = fprintf(fp, "%" HIPARTI_PRI_ELEMENT_INDEX "\t", vec->data[i]);
         pti_CheckOSError(iores < 0, "EleIdxVec Dump");
     }
     iores = fprintf(fp, "\n");
@@ -53,10 +53,10 @@ int ptiDumpElementIndexVector(ptiElementIndexVector *vec, FILE *fp) {
 int ptiDumpIndexVector(ptiIndexVector *vec, FILE *fp) {
     int iores;
     ptiNnzIndex len = vec->len;
-    iores = fprintf(fp, "ptiIndexVector length: %"HIPARTI_PRI_NNZ_INDEX "\n", len);
+    iores = fprintf(fp, "ptiIndexVector length: %" HIPARTI_PRI_NNZ_INDEX "\n", len);
     pti_CheckOSError(iores < 0, "IdxVec Dump");
     for(ptiNnzIndex i=0; i < len; ++i) {
-        iores = fprintf(fp, "%"HIPARTI_PRI_INDEX "\t", vec->data[i]);
+        iores = fprintf(fp, "%" HIPARTI_PRI_INDEX "\t", vec->data[i]);
         pti_CheckOSError(iores < 0, "IdxVec Dump");
     }
     iores = fprintf(fp, "\n");
@@ -75,10 +75,10 @@ int ptiDumpIndexVector(ptiIndexVector *vec, FILE *fp) {
 int ptiDumpBlockIndexVector(ptiBlockIndexVector *vec, FILE *fp) {
     int iores;
     ptiNnzIndex len = vec->len;
-    iores = fprintf(fp, "ptiBlockIndexVector length: %"HIPARTI_PRI_NNZ_INDEX "\n", len);
+    iores = fprintf(fp, "ptiBlockIndexVector length: %" HIPARTI_PRI_NNZ_INDEX "\n", len);
     pti_CheckOSError(iores < 0, "BlkIdxVec Dump");
     for(ptiNnzIndex i=0; i < len; ++i) {
-        iores = fprintf(fp, "%"HIPARTI_PRI_BLOCK_INDEX "\t", vec->data[i]);
+        iores = fprintf(fp, "%" HIPARTI_PRI_BLOCK_INDEX "\t", vec->data[i]);
         pti_CheckOSError(iores < 0, "BlkIdxVec Dump");
     }
     iores = fprintf(fp, "\n");
@@ -97,10 +97,10 @@ int ptiDumpBlockIndexVector(ptiBlockIndexVector *vec, FILE *fp) {
 int ptiDumpNnzIndexVector(ptiNnzIndexVector *vec, FILE *fp) {
     int iores;
     ptiNnzIndex len = vec->len;
-    iores = fprintf(fp, "ptiNnzIndexVector length: %"HIPARTI_PRI_NNZ_INDEX "\n", len);
+    iores = fprintf(fp, "ptiNnzIndexVector length: %" HIPARTI_PRI_NNZ_INDEX "\n", len);
     pti_CheckOSError(iores < 0, "NnzIdxVec Dump");
     for(ptiNnzIndex i=0; i < len; ++i) {
-        iores = fprintf(fp, "%"HIPARTI_PRI_NNZ_INDEX "\t", vec->data[i]);
+        iores = fprintf(fp, "%" HIPARTI_PRI_NNZ_INDEX "\t", vec->data[i]);
         pti_CheckOSError(iores < 0, "NnzIdxVec Dump");
     }
     iores = fprintf(fp, "\n");
@@ -119,10 +119,10 @@ int ptiDumpNnzIndexVector(ptiNnzIndexVector *vec, FILE *fp) {
 int ptiDumpValueVector(ptiValueVector *vec, FILE *fp) {
     int iores;
     ptiNnzIndex len = vec->len;
-    iores = fprintf(fp, "ptiValueVector length: %"HIPARTI_PRI_NNZ_INDEX "\n", len);
+    iores = fprintf(fp, "ptiValueVector length: %" HIPARTI_PRI_NNZ_INDEX "\n", len);
     pti_CheckOSError(iores < 0, "ValVec Dump");
     for(ptiNnzIndex i=0; i < len; ++i) {
-        iores = fprintf(fp, "%"HIPARTI_PRI_VALUE "\t", vec->data[i]);
+        iores = fprintf(fp, "%" HIPARTI_PRI_VALUE "\t", vec->data[i]);
         pti_CheckOSError(iores < 0, "ValVec Dump");
     }
     iores = fprintf(fp, "\n");
@@ -141,10 +141,10 @@ int ptiDumpValueVector(ptiValueVector *vec, FILE *fp) {
  */
 int ptiDumpIndexArray(ptiIndex const *array, ptiNnzIndex const n, FILE *fp) {
     int iores;
-    iores = fprintf(fp, "ptiIndex array length: %"HIPARTI_PRI_NNZ_INDEX "\n", n);
+    iores = fprintf(fp, "ptiIndex array length: %" HIPARTI_PRI_NNZ_INDEX "\n", n);
     pti_CheckOSError(iores < 0, "IdxArray Dump");
     for(ptiNnzIndex i=0; i < n; ++i) {
-        iores = fprintf(fp, "%"HIPARTI_PRI_INDEX "\t", array[i]);
+        iores = fprintf(fp, "%" HIPARTI_PRI_INDEX "\t", array[i]);
         pti_CheckOSError(iores < 0, "IdxArray Dump");
     }
     iores = fprintf(fp, "\n");
@@ -163,10 +163,10 @@ int ptiDumpIndexArray(ptiIndex const *array, ptiNnzIndex const n, FILE *fp) {
  */
 int ptiDumpNnzIndexArray(ptiNnzIndex const *array, ptiNnzIndex const n, FILE *fp) {
     int iores;
-    iores = fprintf(fp, "ptiNnzIndex array length: %"HIPARTI_PRI_NNZ_INDEX "\n", n);
+    iores = fprintf(fp, "ptiNnzIndex array length: %" HIPARTI_PRI_NNZ_INDEX "\n", n);
     pti_CheckOSError(iores < 0, "NnzIdxArray Dump");
     for(ptiNnzIndex i=0; i < n; ++i) {
-        iores = fprintf(fp, "%"HIPARTI_PRI_NNZ_INDEX "\t", array[i]);
+        iores = fprintf(fp, "%" HIPARTI_PRI_NNZ_INDEX "\t", array[i]);
         pti_CheckOSError(iores < 0, "NnzIdxArray Dump");
     }
     iores = fprintf(fp, "\n");

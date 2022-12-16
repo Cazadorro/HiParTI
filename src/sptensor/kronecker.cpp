@@ -37,7 +37,7 @@ int ptiSparseTensorKroneckerMul(ptiSparseTensor *Y, const ptiSparseTensor *A, co
         pti_CheckError(PTIERR_SHAPE_MISMATCH, "SpTns Kronecker", "shape mismatch");
     }
     nmodes = A->nmodes;
-    inds = malloc(nmodes * sizeof *inds);
+    inds = reinterpret_cast<ptiIndex*>(malloc(nmodes * sizeof *inds));
     pti_CheckOSError(!inds, "SpTns Kronecker");
     for(mode = 0; mode < nmodes; ++mode) {
         inds[mode] = A->ndims[mode] * B->ndims[mode];

@@ -74,13 +74,13 @@ int main(int argc, char *argv[]) {
             printf("output file: %s\n", optarg); fflush(stdout);
             break;
         case 'b':
-            sscanf(optarg, "%"HIPARTI_SCN_ELEMENT_INDEX, &sb_bits);
+            sscanf(optarg, "%" HIPARTI_SCN_ELEMENT_INDEX, &sb_bits);
             break;
         case 'k':
-            sscanf(optarg, "%"HIPARTI_SCN_ELEMENT_INDEX, &sk_bits);
+            sscanf(optarg, "%" HIPARTI_SCN_ELEMENT_INDEX, &sk_bits);
             break;
         case 'c':
-            sscanf(optarg, "%"HIPARTI_SCN_ELEMENT_INDEX, &sc_bits);
+            sscanf(optarg, "%" HIPARTI_SCN_ELEMENT_INDEX, &sc_bits);
             break;
         default:
             abort();

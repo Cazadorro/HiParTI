@@ -29,8 +29,8 @@ use or performance of this software.
 
 #ifndef F2C_INCLUDE
 #define F2C_INCLUDE
-
-#if defined(__alpha__) || defined(__sparc64__) || defined(__x86_64__) || defined(__ia64__)
+#include <cstdint>
+#if defined(__alpha__) || defined(__sparc64__) || defined(__x86_64__) || defined(__ia64__) || defined(_WIN64)
 typedef int integer;
 typedef unsigned int uinteger;
 #else
@@ -43,7 +43,7 @@ typedef float real;
 typedef double doublereal;
 typedef struct { real r, i; } complex;
 typedef struct { doublereal r, i; } doublecomplex;
-#if defined(__alpha__) || defined(__sparc64__) || defined(__x86_64__) || defined(__ia64__)
+#if defined(__alpha__) || defined(__sparc64__) || defined(__x86_64__) || defined(__ia64__) || defined(_WIN64)
 typedef int logical;
 #else
 typedef long int logical;
@@ -52,7 +52,7 @@ typedef short int shortlogical;
 typedef char logical1;
 typedef char integer1;
 #ifdef INTEGER_STAR_8	/* Adjust for integer*8. */
-#if defined(__alpha__) || defined(__sparc64__) || defined(__x86_64__) || defined(__ia64__)
+#if defined(__alpha__) || defined(__sparc64__) || defined(__x86_64__) || defined(__ia64__) || defined(_WIN64)
 typedef long longint;		/* system-dependent */
 typedef unsigned long ulongint;	/* system-dependent */
 #else
@@ -79,7 +79,7 @@ typedef short flag;
 typedef short ftnlen;
 typedef short ftnint;
 #else
-#if defined(__alpha__) || defined(__sparc64__) || defined(__x86_64__) || defined(__ia64__)
+#if defined(__alpha__) || defined(__sparc64__) || defined(__x86_64__) || defined(__ia64__) || defined(_WIN64)
 typedef int flag;
 typedef int ftnlen;
 typedef int ftnint;

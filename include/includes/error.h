@@ -39,7 +39,7 @@ extern "C" {
  */
 #ifndef NDEBUG
 #define pti_CheckError(errcode, module, reason) \
-    if(unlikely((errcode) != 0)) { \
+    if(((errcode) != 0)) [[unlikely]] { \
         pti_ComplainError(module, (errcode), __FILE__, __LINE__, (reason)); \
         return (errcode); \
     }
@@ -52,13 +52,13 @@ extern "C" {
 
 #ifndef NDEBUG
 #define pti_CheckOmpError(errcode, module, reason) \
-    if(unlikely((errcode) != 0)) { \
+    if(((errcode) != 0)) [[unlikely]]{ \
         pti_ComplainError(module, (errcode), __FILE__, __LINE__, (reason)); \
         exit(errcode); \
     }
 #else
 #define pti_CheckOmpError(errcode, module, reason) \
-    if(unlikely((errcode) != 0)) { \
+    if(((errcode) != 0)) [[unlikely]] { \
         exit(errcode); \
     }
 #endif
@@ -69,7 +69,7 @@ extern "C" {
  * @param module the module name of current procedure
  */
 #define pti_CheckOSError(cond, module) \
-    if(unlikely((cond))) { \
+    if(((cond))) [[unlikely]] { \
         pti_CheckError(errno + PTIERR_OS_ERROR, (module), strerror(errno)); \
     }
 
@@ -79,7 +79,7 @@ extern "C" {
  * @param module the module name of current procedure
  */
 #define pti_CheckCudaError(cond, module) \
-    if(unlikely((cond))) { \
+    if(((cond))) [[unlikely]]{ \
         cudaError_t _cuda_error = cudaGetLastError(); \
         pti_CheckError(_cuda_error + PTIERR_CUDA_ERROR, (module), cudaGetErrorString(_cuda_error)); \
     }

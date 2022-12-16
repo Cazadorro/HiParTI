@@ -139,7 +139,7 @@ double CpdAlsStep(
     double its_time = ptiElapsedTime(timer);
     ptiFreeTimer(timer);
 
-    printf("  its = %"HIPARTI_PRI_INDEX " ( %.3lf s ) fit = %0.5f  delta = %+0.4e\n",
+    printf("  its = %" HIPARTI_PRI_INDEX " ( %.3lf s ) fit = %0.5f  delta = %+0.4e\n",
         it+1, its_time, fit, fit - oldfit);
     if(it > 0 && fabs(fit - oldfit) < tol) {
       break;

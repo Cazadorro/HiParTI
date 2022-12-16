@@ -126,16 +126,16 @@ int main(int argc, char ** argv) {
             ptiAssert(fs != NULL);
             break;
         case 'b':
-            sscanf(optarg, "%"HIPARTI_SCN_ELEMENT_INDEX, &sb_bits);
+            sscanf(optarg, "%" HIPARTI_SCN_ELEMENT_INDEX, &sb_bits);
             break;
         case 'k':
-            sscanf(optarg, "%"HIPARTI_SCN_ELEMENT_INDEX, &sk_bits);
+            sscanf(optarg, "%" HIPARTI_SCN_ELEMENT_INDEX, &sk_bits);
             break;
         case 'c':
-            sscanf(optarg, "%"HIPARTI_SCN_ELEMENT_INDEX, &sc_bits);
+            sscanf(optarg, "%" HIPARTI_SCN_ELEMENT_INDEX, &sc_bits);
             break;
         case 'm':
-            sscanf(optarg, "%"HIPARTI_SCN_INDEX, &mode);
+            sscanf(optarg, "%" HIPARTI_SCN_INDEX, &mode);
             break;
         case 'p':
             sscanf(optarg, "%d", &impl_num);
@@ -150,7 +150,7 @@ int main(int argc, char ** argv) {
             sscanf(optarg, "%d", &cuda_dev_id);
             break;
         case 'r':
-            sscanf(optarg, "%"HIPARTI_SCN_ELEMENT_INDEX, &R);
+            sscanf(optarg, "%" HIPARTI_SCN_ELEMENT_INDEX, &R);
             break;
         case 't':
             sscanf(optarg, "%d", &tk);
@@ -168,7 +168,7 @@ int main(int argc, char ** argv) {
             exit(1);
         }
     }
-    printf("mode: %"HIPARTI_PRI_INDEX "\n", mode);
+    printf("mode: %" HIPARTI_PRI_INDEX "\n", mode);
     printf("cuda_dev_id: %d\n", cuda_dev_id);
     printf("renumber: %d\n", renumber);
     if (renumber == 1)
@@ -395,7 +395,7 @@ int main(int argc, char ** argv) {
 
             ptiStopTimer(timer);
             char * prg_name;
-            asprintf(&prg_name, "CPU  SpTns MTTKRP MODE %"HIPARTI_PRI_INDEX, mode);
+            asprintf(&prg_name, "CPU  SpTns MTTKRP MODE %" HIPARTI_PRI_INDEX, mode);
             ptiPrintAverageElapsedTime(timer, niters, prg_name);
             printf("\n");
             ptiFreeTimer(timer);

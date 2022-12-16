@@ -44,7 +44,7 @@ int ptiSemiSparseTensorMulMatrix(
         return -1;
     }
     // jli: try to avoid malloc in all operation functions.
-    ind_buf = malloc(X->nmodes * sizeof *ind_buf);
+    ind_buf = reinterpret_cast<ptiIndex *>(malloc(X->nmodes * sizeof *ind_buf));
     if(!ind_buf) {
         return -1;
     }

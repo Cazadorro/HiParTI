@@ -48,7 +48,7 @@ int ptiNewMatrix(ptiMatrix *mtx, ptiIndex const nrows, ptiIndex const ncols) {
         }
     }
 #else
-    mtx->values = malloc(mtx->cap * mtx->stride * sizeof (ptiValue));
+    mtx->values = static_cast<ptiValue *>(malloc(mtx->cap * mtx->stride * sizeof (ptiValue)));
 #endif
     pti_CheckOSError(!mtx->values, "Mtx New");
     return 0;
@@ -121,7 +121,7 @@ int ptiConstantMatrix(ptiMatrix *mtx, ptiValue const val) {
 void ptiMatrixInverseShuffleIndices(ptiMatrix *mtx, ptiIndex * mode_map_inds) {
     /* Renumber matrix rows */
     ptiIndex new_i;
-    ptiValue * tmp_values = malloc(mtx->cap * mtx->stride * sizeof (ptiValue));
+    ptiValue * tmp_values = reinterpret_cast<ptiValue*>(malloc(mtx->cap * mtx->stride * sizeof (ptiValue)));
 
     for(ptiIndex i=0; i<mtx->nrows; ++i) {
         new_i = mode_map_inds[i];
@@ -175,7 +175,7 @@ int ptiAppendMatrix(ptiMatrix *mtx, const ptiValue values[]) {
             }
         }
 #else
-        newdata = malloc(newcap * mtx->stride * sizeof (ptiValue));
+        newdata = reinterpret_cast<ptiValue *>(malloc(newcap * mtx->stride * sizeof (ptiValue)));
 #endif
         pti_CheckOSError(!newdata, "Mtx Append");
         memcpy(newdata, mtx->values, mtx->nrows * mtx->stride * sizeof (ptiValue));
@@ -208,7 +208,7 @@ int ptiResizeMatrix(ptiMatrix *mtx, ptiIndex const new_nrows) {
         }
     }
 #else
-    newdata = malloc(new_nrows * mtx->stride * sizeof (ptiValue));
+    newdata = reinterpret_cast<ptiValue*>(malloc(new_nrows * mtx->stride * sizeof (ptiValue)));
 #endif
     pti_CheckOSError(!newdata, "Mtx Resize");
     memcpy(newdata, mtx->values, mtx->nrows * mtx->stride * sizeof (ptiValue));

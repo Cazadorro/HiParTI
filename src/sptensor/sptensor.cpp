@@ -31,15 +31,15 @@ int ptiNewSparseTensor(ptiSparseTensor *tsr, ptiIndex nmodes, const ptiIndex ndi
     ptiIndex i;
     int result;
     tsr->nmodes = nmodes;
-    tsr->sortorder = malloc(nmodes * sizeof tsr->sortorder[0]);
+    tsr->sortorder = reinterpret_cast<ptiIndex *>(malloc(nmodes * sizeof tsr->sortorder[0]));
     for(i = 0; i < nmodes; ++i) {
         tsr->sortorder[i] = i;
     }
-    tsr->ndims = malloc(nmodes * sizeof *tsr->ndims);
+    tsr->ndims = reinterpret_cast<ptiIndex *>(malloc(nmodes * sizeof *tsr->ndims));
     pti_CheckOSError(!tsr->ndims, "SpTns New");
     memcpy(tsr->ndims, ndims, nmodes * sizeof *tsr->ndims);
     tsr->nnz = 0;
-    tsr->inds = malloc(nmodes * sizeof *tsr->inds);
+    tsr->inds = reinterpret_cast<ptiIndexVector *>(malloc(nmodes * sizeof *tsr->inds));
     pti_CheckOSError(!tsr->inds, "SpTns New");
     for(i = 0; i < nmodes; ++i) {
         result = ptiNewIndexVector(&tsr->inds[i], 0, 0);
@@ -59,13 +59,13 @@ int ptiCopySparseTensor(ptiSparseTensor *dest, const ptiSparseTensor *src, int c
     ptiIndex i;
     int result;
     dest->nmodes = src->nmodes;
-    dest->sortorder = malloc(src->nmodes * sizeof src->sortorder[0]);
+    dest->sortorder = reinterpret_cast<ptiIndex *>(malloc(src->nmodes * sizeof src->sortorder[0]));
     memcpy(dest->sortorder, src->sortorder, src->nmodes * sizeof src->sortorder[0]);
-    dest->ndims = malloc(dest->nmodes * sizeof *dest->ndims);
+    dest->ndims = reinterpret_cast<ptiIndex *>(malloc(dest->nmodes * sizeof *dest->ndims));
     pti_CheckOSError(!dest->ndims, "SpTns Copy");
     memcpy(dest->ndims, src->ndims, src->nmodes * sizeof *src->ndims);
     dest->nnz = src->nnz;
-    dest->inds = malloc(dest->nmodes * sizeof *dest->inds);
+    dest->inds = reinterpret_cast<ptiIndexVector *>(malloc(dest->nmodes * sizeof *dest->inds));
     pti_CheckOSError(!dest->inds, "SpTns Copy");
     for(i = 0; i < dest->nmodes; ++i) {
         result = ptiCopyIndexVector(&dest->inds[i], &src->inds[i], nt);
@@ -185,7 +185,7 @@ int pti_SparseTensorDumpAllSplits(const pti_SplitResult * splits, ptiIndex const
     for(i=0; i<nsplits; ++i) {
     // while(split_i) {
         const pti_SplitResult *split_i = splits + i;
-        printf("Printing split #%"HIPARTI_PRI_INDEX " of %"HIPARTI_PRI_INDEX "lu:\n", i + 1, nsplits);
+        printf("Printing split #%" HIPARTI_PRI_INDEX " of %" HIPARTI_PRI_INDEX "lu:\n", i + 1, nsplits);
         printf("Index: \n");
         ptiDumpIndexArray(split_i->inds_low, split_i->tensor.nmodes, fp);
         printf(" .. \n");
@@ -227,7 +227,7 @@ void ptiSparseTensorShuffleIndices(ptiSparseTensor *tsr, ptiIndex ** map_inds) {
  * @param[out] map_inds is the renumbering mapping
  *
  */
-void ptiSparseTensorInvMap(ptiSparseTensor *tsr, ptiIndex ** map_inds)
+int ptiSparseTensorInvMap(ptiSparseTensor *tsr, ptiIndex ** map_inds)
 {
     ptiIndex ** tmp_map_inds = (ptiIndex **)malloc(tsr->nmodes * sizeof(ptiIndex**));
     pti_CheckOSError(!tmp_map_inds, "ptiSparseTensorInvMap");
@@ -256,7 +256,7 @@ void ptiSparseTensorInvMap(ptiSparseTensor *tsr, ptiIndex ** map_inds)
         free(tmp_map_inds[m]);
     }
     free(tmp_map_inds);
-    
+    return 0;
 }
 
 

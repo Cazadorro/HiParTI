@@ -609,9 +609,9 @@ void ptiSparseTensorSortIndexCustomOrder(ptiSparseTensor *tsr, ptiIndex const * 
 
     tsr_temp.nmodes = nmodes;
     tsr_temp.sortorder = tsr->sortorder;
-    tsr_temp.ndims = malloc(nmodes * sizeof tsr_temp.ndims[0]);
+    tsr_temp.ndims = reinterpret_cast<ptiIndex *>(malloc(nmodes * sizeof tsr_temp.ndims[0]));
     tsr_temp.nnz = tsr->nnz;
-    tsr_temp.inds = malloc(nmodes * sizeof tsr_temp.inds[0]);
+    tsr_temp.inds = reinterpret_cast<ptiIndexVector *>(malloc(nmodes * sizeof tsr_temp.inds[0]));
     tsr_temp.values = tsr->values;
 
     for(m = 0; m < nmodes; ++m) {

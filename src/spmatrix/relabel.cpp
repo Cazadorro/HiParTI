@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
-#include <time.h>
+
+#include "timer.h"
 
 #include "HiParTI.h"
 
@@ -388,7 +388,7 @@ static void ptiLexiOrderPerMode(ptiSparseMatrix * mtx, ptiIndex mode, ptiIndex *
     t1 =u_seconds()-t0;
     printf("mode %u, create time %.2f\n", mode, t1); fflush(stdout);
     
-    rowPtrs = realloc(rowPtrs, (sizeof(ptiNnzIndex) * (mtxNrows + 2)));
+    rowPtrs = reinterpret_cast<ptiNnzIndex *>(realloc(rowPtrs, (sizeof(ptiNnzIndex) * (mtxNrows + 2))));
     cprm = (ptiIndex *) malloc(sizeof(ptiIndex) * (mode_dim + 1));
     invcprm = (ptiIndex *) malloc(sizeof(ptiIndex) * (mode_dim + 1));
     saveOrgIds = (ptiIndex *) malloc(sizeof(ptiIndex) * (mode_dim + 1));

@@ -157,7 +157,7 @@ double OmpCpdAlsStep(
     double its_time = ptiElapsedTime(timer);
     ptiFreeTimer(timer);
 
-    printf("  its = %3"HIPARTI_PRI_INDEX " ( %.3lf s ) fit = %0.5f  delta = %+0.4e\n",
+    printf("  its = %3" HIPARTI_PRI_INDEX " ( %.3lf s ) fit = %0.5f  delta = %+0.4e\n",
         it+1, its_time, fit, fit - oldfit);
     if(it > 0 && fabs(fit - oldfit) < tol) {
       break;

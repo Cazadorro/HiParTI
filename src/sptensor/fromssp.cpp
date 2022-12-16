@@ -35,12 +35,12 @@ int ptiSemiSparseTensorToSparseTensor(ptiSparseTensor *dest, const ptiSemiSparse
     ptiIndex nmodes = src->nmodes;
     assert(epsilon > 0);
     dest->nmodes = nmodes;
-    dest->sortorder = malloc(nmodes * sizeof dest->sortorder[0]);
-    dest->ndims = malloc(nmodes * sizeof *dest->ndims);
+    dest->sortorder = reinterpret_cast<ptiIndex*>(malloc(nmodes * sizeof dest->sortorder[0]));
+    dest->ndims = reinterpret_cast<ptiIndex*>(malloc(nmodes * sizeof *dest->ndims));
     pti_CheckOSError(!dest->ndims, "SspTns -> SpTns");
     memcpy(dest->ndims, src->ndims, nmodes * sizeof *dest->ndims);
     dest->nnz = 0;
-    dest->inds = malloc(nmodes * sizeof *dest->inds);
+    dest->inds = reinterpret_cast<ptiIndexVector*>(malloc(nmodes * sizeof *dest->inds));
     pti_CheckOSError(!dest->inds, "SspTns -> SpTns");
     for(i = 0; i < nmodes; ++i) {
         result = ptiNewIndexVector(&dest->inds[i], 0, src->nnz);

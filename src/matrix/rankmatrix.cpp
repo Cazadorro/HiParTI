@@ -49,7 +49,7 @@ int ptiNewRankMatrix(ptiRankMatrix *mtx, ptiIndex const nrows, ptiElementIndex c
         }
     }
 #else
-    mtx->values = malloc(mtx->cap * mtx->stride * sizeof (ptiValue));
+    mtx->values = reinterpret_cast<ptiValue *>(malloc(mtx->cap * mtx->stride * sizeof (ptiValue)));
 #endif
     pti_CheckOSError(!mtx->values, "RankMtx New");
     return 0;
@@ -101,7 +101,7 @@ int ptiConstantRankMatrix(ptiRankMatrix *mtx, ptiValue const val) {
 void ptiRankMatrixInverseShuffleIndices(ptiRankMatrix *mtx, ptiIndex * mode_map_inds) {
     /* Renumber matrix rows */
     ptiIndex new_i;
-    ptiValue * tmp_values = malloc(mtx->cap * mtx->stride * sizeof (ptiValue));
+    ptiValue * tmp_values = reinterpret_cast<ptiValue*>(malloc(mtx->cap * mtx->stride * sizeof (ptiValue)));
 
     for(ptiIndex i=0; i<mtx->nrows; ++i) {
         new_i = mode_map_inds[i];

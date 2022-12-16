@@ -22,11 +22,11 @@
 void ptiSparseMatrixStatusHiCOO(ptiSparseMatrixHiCOO *himtx, FILE *fp)
 {
   fprintf(fp, "HiCOO Sparse Tensor information ---------\n");
-  fprintf(fp, " DIMS=%"HIPARTI_PRI_INDEX "x%"HIPARTI_PRI_INDEX "\n", himtx->nrows, himtx->ncols);
-  fprintf(fp, " NNZ=%"HIPARTI_PRI_NNZ_INDEX "\n", himtx->nnz);
-  fprintf(fp, " sb=%"HIPARTI_PRI_INDEX "\n", (ptiIndex)pow(2, himtx->sb_bits));
-  fprintf(fp, " nb=%"HIPARTI_PRI_NNZ_INDEX "\n", himtx->bptr.len - 1);
-  fprintf(fp, " nk=%"HIPARTI_PRI_NNZ_INDEX "\n", himtx->kptr.len - 1);
+  fprintf(fp, " DIMS=%" HIPARTI_PRI_INDEX "x%" HIPARTI_PRI_INDEX "\n", himtx->nrows, himtx->ncols);
+  fprintf(fp, " NNZ=%" HIPARTI_PRI_NNZ_INDEX "\n", himtx->nnz);
+  fprintf(fp, " sb=%" HIPARTI_PRI_INDEX "\n", (ptiIndex)pow(2, himtx->sb_bits));
+  fprintf(fp, " nb=%" HIPARTI_PRI_NNZ_INDEX "\n", himtx->bptr.len - 1);
+  fprintf(fp, " nk=%" HIPARTI_PRI_NNZ_INDEX "\n", himtx->kptr.len - 1);
 
   ptiNnzIndex bytes = himtx->nnz * ( sizeof(ptiValue) + 2 * sizeof(ptiElementIndex) );
   bytes += himtx->bindI.len * 2 * sizeof(ptiBlockIndex);
@@ -46,7 +46,7 @@ void ptiSparseMatrixStatusHiCOO(ptiSparseMatrixHiCOO *himtx, FILE *fp)
 
 
   fprintf(fp, "SCHEDULE INFO [KERNEL]: \n");
-  fprintf(fp, "SCHEDULE : %"HIPARTI_PRI_INDEX" x %"HIPARTI_PRI_INDEX"\n", kernel_ndim, himtx->nkiters);
+  fprintf(fp, "SCHEDULE : %" HIPARTI_PRI_INDEX" x %" HIPARTI_PRI_INDEX"\n", kernel_ndim, himtx->nkiters);
 
 
   ptiNnzIndex max_nnzk = 0;

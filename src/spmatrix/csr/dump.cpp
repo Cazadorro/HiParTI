@@ -24,9 +24,9 @@ int ptiDumpSparseMatrixCSR(ptiSparseMatrixCSR * const csrmtx, FILE *fp)
 {
     int iores;
 
-    iores = fprintf(fp, "%"HIPARTI_PRI_INDEX "x%"HIPARTI_PRI_INDEX ", ", csrmtx->nrows, csrmtx->ncols);
+    iores = fprintf(fp, "%" HIPARTI_PRI_INDEX "x%" HIPARTI_PRI_INDEX ", ", csrmtx->nrows, csrmtx->ncols);
     pti_CheckOSError(iores < 0, "SpMtx Dump");
-    iores = fprintf(fp, "%"HIPARTI_PRI_NNZ_INDEX "\n", csrmtx->nnz);
+    iores = fprintf(fp, "%" HIPARTI_PRI_NNZ_INDEX "\n", csrmtx->nnz);
     pti_CheckOSError(iores < 0, "SpMtx Dump");
 
     fprintf(fp, "rowptr:\n");

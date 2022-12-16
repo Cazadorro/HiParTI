@@ -47,7 +47,7 @@ void ptiKruskalTensorInverseShuffleIndices(ptiKruskalTensor * ktsr, ptiIndex ** 
     for(ptiIndex m=0; m < ktsr->nmodes; ++m) {
         ptiMatrix * mtx = ktsr->factors[m];
         ptiIndex * mode_map_inds = map_inds[m];
-        ptiValue * tmp_values = malloc(mtx->cap * mtx->stride * sizeof (ptiValue));
+        ptiValue * tmp_values = reinterpret_cast<ptiValue *>(malloc(mtx->cap * mtx->stride * sizeof (ptiValue)));
 
         for(ptiIndex i=0; i<mtx->nrows; ++i) {
             new_i = mode_map_inds[i];

@@ -89,7 +89,7 @@ int main(int argc, char ** argv) {
             printf("output file: %s\n", optarg); fflush(stdout);
             break;
         case 'b':
-            sscanf(optarg, "%"HIPARTI_SCN_ELEMENT_INDEX, &sb_bits);
+            sscanf(optarg, "%" HIPARTI_SCN_ELEMENT_INDEX, &sb_bits);
             break;
         case 'p':
             sscanf(optarg, "%d", &impl_num);

@@ -97,16 +97,16 @@ int main(int argc, char ** argv) {
             ptiAssert(fo != NULL);
             break;
         case 'b':
-            sscanf(optarg, "%"HIPARTI_SCN_ELEMENT_INDEX, &sb_bits);
+            sscanf(optarg, "%" HIPARTI_SCN_ELEMENT_INDEX, &sb_bits);
             break;
         case 'k':
-            sscanf(optarg, "%"HIPARTI_SCN_ELEMENT_INDEX, &sk_bits);
+            sscanf(optarg, "%" HIPARTI_SCN_ELEMENT_INDEX, &sk_bits);
             break;
         case 'c':
-            sscanf(optarg, "%"HIPARTI_SCN_ELEMENT_INDEX, &sc_bits);
+            sscanf(optarg, "%" HIPARTI_SCN_ELEMENT_INDEX, &sc_bits);
             break;
         case 'm':
-            sscanf(optarg, "%"HIPARTI_SCN_INDEX, &mode);
+            sscanf(optarg, "%" HIPARTI_SCN_INDEX, &mode);
             break;
         case 'p':
             sscanf(optarg, "%d", &impl_num);
@@ -115,7 +115,7 @@ int main(int argc, char ** argv) {
             sscanf(optarg, "%d", &cuda_dev_id);
             break;
         case 'r':
-            sscanf(optarg, "%"HIPARTI_SCN_INDEX, &R);
+            sscanf(optarg, "%" HIPARTI_SCN_INDEX, &R);
             break;
         case 't':
             sscanf(optarg, "%d", &tk);

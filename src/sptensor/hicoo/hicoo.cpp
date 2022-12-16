@@ -39,11 +39,11 @@ int ptiNewSparseTensorHiCOO(
     int result;
 
     hitsr->nmodes = nmodes;
-    hitsr->sortorder = malloc(nmodes * sizeof hitsr->sortorder[0]);
+    hitsr->sortorder = reinterpret_cast<ptiIndex*>(malloc(nmodes * sizeof hitsr->sortorder[0]));
     for(i = 0; i < nmodes; ++i) {
         hitsr->sortorder[i] = i;
     }
-    hitsr->ndims = malloc(nmodes * sizeof *hitsr->ndims);
+    hitsr->ndims = reinterpret_cast<ptiIndex*>(malloc(nmodes * sizeof *hitsr->ndims));
     pti_CheckOSError(!hitsr->ndims, "HiSpTns New");
     memcpy(hitsr->ndims, ndims, nmodes * sizeof *hitsr->ndims);
     hitsr->nnz = nnz;
@@ -108,14 +108,14 @@ int ptiNewSparseTensorHiCOO(
 
     result = ptiNewNnzIndexVector(&hitsr->bptr, 0, 0);
     pti_CheckError(result, "HiSpTns New", NULL);
-    hitsr->binds = malloc(nmodes * sizeof *hitsr->binds);
+    hitsr->binds = reinterpret_cast<ptiBlockIndexVector *>(malloc(nmodes * sizeof *hitsr->binds));
     pti_CheckOSError(!hitsr->binds, "HiSpTns New");
     for(i = 0; i < nmodes; ++i) {
         result = ptiNewBlockIndexVector(&hitsr->binds[i], 0, 0);
         pti_CheckError(result, "HiSpTns New", NULL);
     }
 
-    hitsr->einds = malloc(nmodes * sizeof *hitsr->einds);
+    hitsr->einds = reinterpret_cast<ptiElementIndexVector *>(malloc(nmodes * sizeof *hitsr->einds));
     pti_CheckOSError(!hitsr->einds, "HiSpTns New");
     for(i = 0; i < nmodes; ++i) {
         result = ptiNewElementIndexVector(&hitsr->einds[i], 0, 0);
@@ -147,11 +147,11 @@ int ptiNewSparseTensorHiCOO_NoNnz(
     int result;
 
     hitsr->nmodes = nmodes;
-    hitsr->sortorder = malloc(nmodes * sizeof hitsr->sortorder[0]);
+    hitsr->sortorder = reinterpret_cast<ptiIndex *>(malloc(nmodes * sizeof hitsr->sortorder[0]));
     for(i = 0; i < nmodes; ++i) {
         hitsr->sortorder[i] = i;
     }
-    hitsr->ndims = malloc(nmodes * sizeof *hitsr->ndims);
+    hitsr->ndims = reinterpret_cast<ptiIndex *>(malloc(nmodes * sizeof *hitsr->ndims));
     pti_CheckOSError(!hitsr->ndims, "HiSpTns New");
     memcpy(hitsr->ndims, ndims, nmodes * sizeof *hitsr->ndims);
 
@@ -181,14 +181,14 @@ int ptiNewSparseTensorHiCOO_NoNnz(
 
     result = ptiNewNnzIndexVector(&hitsr->bptr, 0, 0);
     pti_CheckError(result, "HiSpTns New", NULL);
-    hitsr->binds = malloc(nmodes * sizeof *hitsr->binds);
+    hitsr->binds = reinterpret_cast<ptiBlockIndexVector *>(malloc(nmodes * sizeof *hitsr->binds));
     pti_CheckOSError(!hitsr->binds, "HiSpTns New");
     for(i = 0; i < nmodes; ++i) {
         result = ptiNewBlockIndexVector(&hitsr->binds[i], 0, 0);
         pti_CheckError(result, "HiSpTns New", NULL);
     }
 
-    hitsr->einds = malloc(nmodes * sizeof *hitsr->einds);
+    hitsr->einds = reinterpret_cast<ptiElementIndexVector *>(malloc(nmodes * sizeof *hitsr->einds));
     pti_CheckOSError(!hitsr->einds, "HiSpTns New");
     for(i = 0; i < nmodes; ++i) {
         result = ptiNewElementIndexVector(&hitsr->einds[i], 0, 0);

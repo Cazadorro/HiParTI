@@ -40,7 +40,7 @@ int ptiSparseTensorKhatriRaoMul(ptiSparseTensor *Y, const ptiSparseTensor *A, co
     if(A->ndims[nmodes-1] != B->ndims[nmodes-1]) {
         pti_CheckError(PTIERR_SHAPE_MISMATCH, "Khatri-Rao", "shape mismatch");
     }
-    inds = malloc(nmodes * sizeof *inds);
+    inds = static_cast<ptiIndex *>(malloc(nmodes * sizeof *inds));
     pti_CheckOSError(!inds, "Khatri-Rao");
     for(mode = 0; mode < nmodes-1; ++mode) {
         inds[mode] = A->ndims[mode] * B->ndims[mode];

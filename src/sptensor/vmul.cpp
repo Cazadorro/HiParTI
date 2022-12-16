@@ -36,7 +36,7 @@ int ptiSparseTensorMulVector(ptiSemiSparseTensor *Y, ptiSparseTensor * const X, 
     }
     ptiSparseTensorSortIndexAtMode(X, mode, 0);
     // jli: try to avoid malloc in all operation functions.
-    ind_buf = malloc(X->nmodes * sizeof *ind_buf);
+    ind_buf = reinterpret_cast<ptiIndex *>(malloc(X->nmodes * sizeof *ind_buf));
     pti_CheckOSError(!ind_buf, "CPU  SpTns * Vec");
     for(ptiIndex m = 0; m < X->nmodes; ++m) {
         ind_buf[m] = X->ndims[m];

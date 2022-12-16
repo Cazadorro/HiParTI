@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
             printf("X input file: %s\n", Xfname); fflush(stdout);
             break;
         case 'a':
-            sscanf(optarg, "%"HIPARTI_SCN_VALUE, &a);
+            sscanf(optarg, "%" HIPARTI_SCN_VALUE, &a);
             break;
         case 'Z':
             fZ = fopen(optarg, "w");
@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
     }
-    printf("Scaling a: %"HIPARTI_PRI_VALUE"\n", a); 
+    printf("Scaling a: %" HIPARTI_PRI_VALUE"\n", a);
 
     ptiAssert(ptiLoadSparseTensor(&X, 1, Xfname) == 0);
 

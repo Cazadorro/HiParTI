@@ -36,7 +36,7 @@
 //extern "C" {
 #endif
 
-
+#include "windows_compat.h"
 
 /*************************************************
  * TYPES

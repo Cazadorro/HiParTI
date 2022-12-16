@@ -23,8 +23,8 @@
 void ptiSparseMatrixStatusCSR(ptiSparseMatrixCSR *csrmtx, FILE *fp)
 {
   fprintf(fp, "CSR Sparse Matrix information (use ptiIndex, ptiValue))---------\n");
-  fprintf(fp, " DIMS=%"HIPARTI_PRI_INDEX "x%"HIPARTI_PRI_INDEX "\n", csrmtx->nrows, csrmtx->ncols);
-  fprintf(fp, " NNZ=%"HIPARTI_PRI_NNZ_INDEX, csrmtx->nnz);
+  fprintf(fp, " DIMS=%" HIPARTI_PRI_INDEX "x%" HIPARTI_PRI_INDEX "\n", csrmtx->nrows, csrmtx->ncols);
+  fprintf(fp, " NNZ=%" HIPARTI_PRI_NNZ_INDEX, csrmtx->nnz);
 
   char * bytestr = ptiBytesString(csrmtx->nnz * (sizeof(ptiIndex) + sizeof(ptiValue)) + (csrmtx->nrows + 1) * sizeof(ptiNnzIndex));
   fprintf(fp, " CSR-STORAGE=%s\n", bytestr);

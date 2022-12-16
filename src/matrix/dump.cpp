@@ -35,11 +35,11 @@ int ptiDumpMatrix(ptiMatrix *mtx, FILE *fp) {
     ptiIndex nrows = mtx->nrows;
     ptiIndex ncols = mtx->ncols;
     ptiIndex stride = mtx->stride;
-    iores = fprintf(fp, "%"HIPARTI_PRI_INDEX " x %"HIPARTI_PRI_INDEX " matrix\n", nrows, ncols);
+    iores = fprintf(fp, "%" HIPARTI_PRI_INDEX " x %" HIPARTI_PRI_INDEX " matrix\n", nrows, ncols);
     pti_CheckOSError(iores < 0, "Mtx Dump");
     for(ptiIndex i=0; i < nrows; ++i) {
       for(ptiIndex j=0; j < ncols; ++j) {
-          iores = fprintf(fp, "%.2"HIPARTI_PRI_VALUE "\t", mtx->values[i * stride + j]);
+          iores = fprintf(fp, "%.2" HIPARTI_PRI_VALUE "\t", mtx->values[i * stride + j]);
           pti_CheckOSError(iores < 0, "Mtx Dump");
       }
       iores = fprintf(fp, "\n");
@@ -61,11 +61,11 @@ int ptiDumpRankMatrix(ptiRankMatrix *mtx, FILE *fp) {
     ptiIndex nrows = mtx->nrows;
     ptiElementIndex ncols = mtx->ncols;
     ptiElementIndex stride = mtx->stride;
-    iores = fprintf(fp, "%"HIPARTI_PRI_INDEX " x %"HIPARTI_PRI_ELEMENT_INDEX " matrix\n", nrows, ncols);
+    iores = fprintf(fp, "%" HIPARTI_PRI_INDEX " x %" HIPARTI_PRI_ELEMENT_INDEX " matrix\n", nrows, ncols);
     pti_CheckOSError(iores < 0, "RankMtx Dump");
     for(ptiIndex i=0; i < nrows; ++i) {
       for(ptiElementIndex j=0; j < ncols; ++j) {
-          iores = fprintf(fp, "%.2"HIPARTI_PRI_VALUE "\t", mtx->values[i * stride + j]);
+          iores = fprintf(fp, "%.2" HIPARTI_PRI_VALUE "\t", mtx->values[i * stride + j]);
           pti_CheckOSError(iores < 0, "RankMtx Dump");
       }
       iores = fprintf(fp, "\n");

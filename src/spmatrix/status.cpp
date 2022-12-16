@@ -30,8 +30,8 @@ static double ptiSparseMatrixDensity(ptiSparseMatrix const * const mtx)
 void ptiSparseMatrixStatus(ptiSparseMatrix *mtx, FILE *fp)
 {
   fprintf(fp, "COO Sparse Matrix information (use ptiIndex, ptiValue))---------\n");
-  fprintf(fp, " DIMS=%"HIPARTI_PRI_INDEX "x%"HIPARTI_PRI_INDEX "\n", mtx->nrows, mtx->ncols);
-  fprintf(fp, " NNZ=%"HIPARTI_PRI_NNZ_INDEX, mtx->nnz);
+  fprintf(fp, " DIMS=%" HIPARTI_PRI_INDEX "x%" HIPARTI_PRI_INDEX "\n", mtx->nrows, mtx->ncols);
+  fprintf(fp, " NNZ=%" HIPARTI_PRI_NNZ_INDEX, mtx->nnz);
   fprintf(fp, " DENSITY=%e\n" , ptiSparseMatrixDensity(mtx));
 
   fprintf(fp, " Average row length: %.2lf\n", (double)mtx->nnz / mtx->nrows);

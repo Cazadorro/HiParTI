@@ -30,23 +30,23 @@ int ptiDumpSparseTensor(const ptiSparseTensor *tsr, ptiIndex start_index, FILE *
     int iores;
     ptiIndex mode;
     ptiNnzIndex i;
-    iores = fprintf(fp, "%"HIPARTI_PRI_INDEX "\n", tsr->nmodes);
+    iores = fprintf(fp, "%" HIPARTI_PRI_INDEX "\n", tsr->nmodes);
     pti_CheckOSError(iores < 0, "SpTns Dump");
     for(mode = 0; mode < tsr->nmodes; ++mode) {
         if(mode != 0) {
             iores = fputs(" ", fp);
             pti_CheckOSError(iores < 0, "SpTns Dump");
         }
-        iores = fprintf(fp, "%"HIPARTI_PRI_INDEX, tsr->ndims[mode]);
+        iores = fprintf(fp, "%" HIPARTI_PRI_INDEX, tsr->ndims[mode]);
         pti_CheckOSError(iores < 0, "SpTns Dump");
     }
     fputs("\n", fp);
     for(i = 0; i < tsr->nnz; ++i) {
         for(mode = 0; mode < tsr->nmodes; ++mode) {
-            iores = fprintf(fp, "%"HIPARTI_PRI_INDEX "\t", tsr->inds[mode].data[i]+start_index);
+            iores = fprintf(fp, "%" HIPARTI_PRI_INDEX "\t", tsr->inds[mode].data[i]+start_index);
             pti_CheckOSError(iores < 0, "SpTns Dump");
         }
-        iores = fprintf(fp, "%"HIPARTI_PRI_VALUE "\n", (double) tsr->values.data[i]);
+        iores = fprintf(fp, "%" HIPARTI_PRI_VALUE "\n", (double) tsr->values.data[i]);
         pti_CheckOSError(iores < 0, "SpTns Dump");
     }
     return 0;

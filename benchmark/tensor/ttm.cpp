@@ -81,13 +81,13 @@ int main(int argc, char *argv[]) {
             printf("output file: %s\n", optarg); fflush(stdout);
             break;
         case 'm':
-            sscanf(optarg, "%"HIPARTI_SCN_INDEX, &mode);
+            sscanf(optarg, "%" HIPARTI_SCN_INDEX, &mode);
             break;
         case 'd':
             sscanf(optarg, "%d", &dev_id);
             break;
         case 'r':
-            sscanf(optarg, "%u"HIPARTI_SCN_INDEX, &R);
+            sscanf(optarg, "%u" HIPARTI_SCN_INDEX, &R);
             break;
         case 't':
             sscanf(optarg, "%d", &nthreads);
@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
     }
-    printf("mode: %"HIPARTI_PRI_INDEX "\n", mode);
+    printf("mode: %" HIPARTI_PRI_INDEX "\n", mode);
     printf("dev_id: %d\n", dev_id);
     printf("nthreads: %d\n", nthreads);
 
@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
     ptiAssert(ptiLoadSparseTensor(&X, 1, ifname) == 0);
     ptiSparseTensorStatus(&X, stdout);
 
-    printf("ptiRandomizeMatrix(&U, %"HIPARTI_PRI_INDEX ", %"HIPARTI_PRI_INDEX ")\n", X.ndims[mode], R);
+    printf("ptiRandomizeMatrix(&U, %" HIPARTI_PRI_INDEX ", %" HIPARTI_PRI_INDEX ")\n", X.ndims[mode], R);
     ptiAssert(ptiNewMatrix(&U, X.ndims[mode], R) == 0);
     ptiAssert(ptiConstantMatrix(&U, 1) == 0);
     // ptiAssert(ptiRandomizeMatrix(&U) == 0);

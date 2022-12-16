@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <time.h>
+#include <ctime>
 
 struct ptiTagTimer {
     int use_cuda;
@@ -45,6 +45,7 @@ int ptiStartTimer(ptiTimer timer) {
     if(timer->use_cuda) {
         pti_CheckError(3 + PTIERR_CUDA_ERROR, "Timer New", "CUDA support is disabled in this build");
     } else {
+
         result = clock_gettime(CLOCK_MONOTONIC, &timer->start_timespec);
         pti_CheckOSError(result, "Timer New");
     }

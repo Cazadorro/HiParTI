@@ -118,13 +118,13 @@ int main(int argc, char ** argv) {
             printf("output file: %s\n", optarg); fflush(stdout);
             break;
         case 'm':
-            sscanf(optarg, "%"HIPARTI_SCN_INDEX, &mode);
+            sscanf(optarg, "%" HIPARTI_SCN_INDEX, &mode);
             break;
         case 'b':
-            sscanf(optarg, "%"HIPARTI_SCN_ELEMENT_INDEX, &sb_bits);
+            sscanf(optarg, "%" HIPARTI_SCN_ELEMENT_INDEX, &sb_bits);
             break;
         case 'k':
-            sscanf(optarg, "%"HIPARTI_SCN_ELEMENT_INDEX, &sk_bits);
+            sscanf(optarg, "%" HIPARTI_SCN_ELEMENT_INDEX, &sk_bits);
             break;
         case 's':
             sscanf(optarg, "%d", &sortcase);
@@ -142,7 +142,7 @@ int main(int argc, char ** argv) {
             sscanf(optarg, "%d", &cuda_dev_id);
             break;
         case 'r':
-            sscanf(optarg, "%u"HIPARTI_SCN_INDEX, &R);
+            sscanf(optarg, "%u" HIPARTI_SCN_INDEX, &R);
             break;
         case 'u':
             sscanf(optarg, "%d", &use_reduce);
@@ -158,7 +158,7 @@ int main(int argc, char ** argv) {
         }
     }
 
-    printf("mode: %"HIPARTI_PRI_INDEX "\n", mode);
+    printf("mode: %" HIPARTI_PRI_INDEX "\n", mode);
     printf("cuda_dev_id: %d\n", cuda_dev_id);
     printf("sortcase: %d\n", sortcase);
     printf("renumber: %d\n", renumber);
@@ -378,7 +378,7 @@ int main(int argc, char ** argv) {
 
             if(cuda_dev_id == -2 || cuda_dev_id == -1) {
                 char * prg_name;
-                asprintf(&prg_name, "CPU  SpTns MTTKRP MODE %"HIPARTI_PRI_INDEX, mode);
+                asprintf(&prg_name, "CPU  SpTns MTTKRP MODE %" HIPARTI_PRI_INDEX, mode);
                 double aver_time = ptiPrintAverageElapsedTime(timer, niters, prg_name);
 
                 double gflops = (double)nmodes * R * X.nnz / aver_time / 1e9;

@@ -139,7 +139,7 @@ int main(int argc, char ** argv) {
         }
     }
 
-    printf("mode: %"HIPARTI_PRI_INDEX "\n", mode);
+    printf("mode: %" HIPARTI_PRI_INDEX "\n", mode);
     printf("cuda_dev_id: %d\n", cuda_dev_id);
     printf("sortcase: %d\n", sortcase);
 

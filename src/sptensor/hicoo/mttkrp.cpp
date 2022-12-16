@@ -460,7 +460,7 @@ int ptiMTTKRPHiCOO_3D_MatrixTiling(
         ptiNnzIndex kptr_end = hitsr->kptr.data[k+1];
 
         /* Loop blocks in a kernel */
-        // printf("kptr_begin: %"HIPARTI_PRI_NNZ_INDEX", kptr_end: %"HIPARTI_PRI_NNZ_INDEX"\n", kptr_begin, kptr_end); 
+        // printf("kptr_begin: %" HIPARTI_PRI_NNZ_INDEX", kptr_end: %" HIPARTI_PRI_NNZ_INDEX"\n", kptr_begin, kptr_end);
         // ptiStartTimer(kernel_timer);
         for(ptiIndex b=kptr_begin; b<kptr_end; ++b) {
 
@@ -476,7 +476,7 @@ int ptiMTTKRPHiCOO_3D_MatrixTiling(
             // ptiPrintElapsedTime(blockmat_timer, "===Blockmat Timer");
 
             /* Loop entries in a block */
-            // printf("bptr_begin: %"HIPARTI_PRI_INDEX", bptr_end: %"HIPARTI_PRI_INDEX"\n", bptr_begin, bptr_end); 
+            // printf("bptr_begin: %" HIPARTI_PRI_INDEX", bptr_end: %" HIPARTI_PRI_INDEX"\n", bptr_begin, bptr_end);
             // ptiStartTimer(block_timer);
             for(ptiIndex z=bptr_begin; z<bptr_end; ++z) {
                 // ptiStartTimer(elementmat_timer);
@@ -603,7 +603,7 @@ int ptiMTTKRPHiCOO_4D_MatrixTiling(
         ptiNnzIndex kptr_end = hitsr->kptr.data[k+1];
 
         /* Loop blocks in a kernel */
-        // printf("kptr_begin: %"HIPARTI_PRI_NNZ_INDEX", kptr_end: %"HIPARTI_PRI_NNZ_INDEX"\n", kptr_begin, kptr_end); 
+        // printf("kptr_begin: %" HIPARTI_PRI_NNZ_INDEX", kptr_end: %" HIPARTI_PRI_NNZ_INDEX"\n", kptr_begin, kptr_end);
         // ptiStartTimer(kernel_timer);
         for(ptiIndex b=kptr_begin; b<kptr_end; ++b) {
 
@@ -620,7 +620,7 @@ int ptiMTTKRPHiCOO_4D_MatrixTiling(
             // ptiPrintElapsedTime(blockmat_timer, "===Blockmat Timer");
 
             /* Loop entries in a block */
-            // printf("bptr_begin: %"HIPARTI_PRI_INDEX", bptr_end: %"HIPARTI_PRI_INDEX"\n", bptr_begin, bptr_end); 
+            // printf("bptr_begin: %" HIPARTI_PRI_INDEX", bptr_end: %" HIPARTI_PRI_INDEX"\n", bptr_begin, bptr_end);
             // ptiStartTimer(block_timer);
             for(ptiIndex z=bptr_begin; z<bptr_end; ++z) {
                 // ptiStartTimer(elementmat_timer);

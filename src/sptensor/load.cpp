@@ -24,7 +24,7 @@
 
 struct ftype
 {
-  char * extension;
+  const char * extension;
   int type;
 };
 
@@ -41,11 +41,12 @@ static int get_file_type(
 {
   /* find last . in filename */
   char const * const suffix = strrchr(fname, '.');
+  size_t idx = 0;
   if(suffix == NULL) {
     goto NOT_FOUND;
   }
 
-  size_t idx = 0;
+
   do {
     if(strcmp(suffix, file_extensions[idx].extension) == 0) {
       return file_extensions[idx].type;
@@ -67,17 +68,17 @@ static int p_tt_read_file(ptiSparseTensor *tsr, ptiIndex start_index, FILE *fp)
     iores = fscanf(fp, "%u", &tsr->nmodes);
     pti_CheckOSError(iores < 0, "SpTns Load");
     /* Only allocate space for sortorder, initialized to 0s. */
-    tsr->sortorder = malloc(tsr->nmodes * sizeof tsr->sortorder[0]);
+    tsr->sortorder = reinterpret_cast<ptiIndex *>(malloc(tsr->nmodes * sizeof tsr->sortorder[0]));
     pti_CheckOSError(!tsr->sortorder, "SpTns Load");
     memset(tsr->sortorder, 0, tsr->nmodes * sizeof tsr->sortorder[0]);
-    tsr->ndims = malloc(tsr->nmodes * sizeof *tsr->ndims);
+    tsr->ndims = reinterpret_cast<ptiIndex *>(malloc(tsr->nmodes * sizeof *tsr->ndims));
     pti_CheckOSError(!tsr->ndims, "SpTns Load");
     for(mode = 0; mode < tsr->nmodes; ++mode) {
         iores = fscanf(fp, "%u", &tsr->ndims[mode]);
         pti_CheckOSError(iores != 1, "SpTns Load");
     }
     tsr->nnz = 0;
-    tsr->inds = malloc(tsr->nmodes * sizeof *tsr->inds);
+    tsr->inds = reinterpret_cast<ptiIndexVector *>(malloc(tsr->nmodes * sizeof *tsr->inds));
     pti_CheckOSError(!tsr->inds, "SpTns Load");
     for(mode = 0; mode < tsr->nmodes; ++mode) {
         retval = ptiNewIndexVector(&tsr->inds[mode], 0, 0);

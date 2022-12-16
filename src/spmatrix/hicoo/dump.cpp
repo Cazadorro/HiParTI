@@ -24,9 +24,9 @@ int ptiDumpSparseMatrixHiCOO(ptiSparseMatrixHiCOO * const himtx, FILE *fp)
 {
     int iores;
 
-    iores = fprintf(fp, "%"HIPARTI_PRI_INDEX "x%"HIPARTI_PRI_INDEX ", ", himtx->nrows, himtx->ncols);
+    iores = fprintf(fp, "%" HIPARTI_PRI_INDEX "x%" HIPARTI_PRI_INDEX ", ", himtx->nrows, himtx->ncols);
     pti_CheckOSError(iores < 0, "SpMtx Dump");
-    iores = fprintf(fp, "%"HIPARTI_PRI_NNZ_INDEX "\n", himtx->nnz);
+    iores = fprintf(fp, "%" HIPARTI_PRI_NNZ_INDEX "\n", himtx->nnz);
     pti_CheckOSError(iores < 0, "SpMtx Dump");
 
     fprintf(fp, "bptr:\n");
@@ -44,7 +44,7 @@ int ptiDumpSparseMatrixHiCOO(ptiSparseMatrixHiCOO * const himtx, FILE *fp)
 
     ptiIndex sk = (ptiIndex)pow(2, himtx->sk_bits);
     fprintf(fp, "Superblock scheduler:\n");
-    fprintf(fp, "nkiters: %"HIPARTI_PRI_INDEX"\n", himtx->nkiters);
+    fprintf(fp, "nkiters: %" HIPARTI_PRI_INDEX"\n", himtx->nkiters);
     fprintf(fp, "kschr:\n");
     for(ptiIndex i=0; i<(himtx->nrows + sk - 1)/sk; ++i) {
         ptiDumpIndexVector(&himtx->kschr[i], fp);

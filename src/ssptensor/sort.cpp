@@ -29,7 +29,7 @@ static void pti_SwapValues(ptiSemiSparseTensor *tsr, ptiNnzIndex ind1, ptiNnzInd
  * @param tsr  the semi sparse tensor to operate on
  */
 int ptiSemiSparseTensorSortIndex(ptiSemiSparseTensor *tsr) {
-    ptiValue *buffer = malloc(tsr->stride * sizeof (ptiValue));
+    ptiValue *buffer = reinterpret_cast<ptiValue *>(malloc(tsr->stride * sizeof (ptiValue)));
     pti_CheckOSError(!buffer, "SspTns SortIndex");
     pti_QuickSortIndex(tsr, 0, tsr->nnz, buffer);
     free(buffer);

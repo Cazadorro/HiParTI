@@ -590,7 +590,7 @@ int ptiPreprocessSparseTensor(
         ptiSparseTensorSortIndexMorton(tsr, 1, k_begin, k_end, sb_bits, tk);
         // ptiSparseTensorSortIndexRowBlock(tsr, 1, k_begin, k_end, sb_bits, tk);
 #if PARTI_DEBUG == 3
-    printf("Kernel %"HIPARTI_PRI_NNZ_INDEX ": Sorted by ptiSparseTensorSortIndexMorton.\n", k);
+    printf("Kernel %" HIPARTI_PRI_NNZ_INDEX ": Sorted by ptiSparseTensorSortIndexMorton.\n", k);
     ptiAssert(ptiDumpSparseTensor(tsr, 0, stdout) == 0);
 #endif
     }
@@ -664,7 +664,7 @@ int ptiSparseTensorToHiCOO(
     ptiIndex sc = pow(2, sc_bits);
 
     /* Set HiCOO parameters. ndims for type conversion, size_t -> ptiIndex */
-    ptiIndex * ndims = malloc(nmodes * sizeof *ndims);
+    ptiIndex * ndims = reinterpret_cast<ptiIndex*>(malloc(nmodes * sizeof *ndims));
     pti_CheckOSError(!ndims, "HiSpTns Convert");
     for(i = 0; i < nmodes; ++i) {
         ndims[i] = (ptiIndex)tsr->ndims[i];
@@ -744,7 +744,7 @@ int ptiSparseTensorToHiCOO(
         /* Loop nonzeros in each kernel */
         for(ptiNnzIndex z = k_begin; z < k_end; ++z) {
             #if PARTI_DEBUG == 5
-                printf("z: %"HIPARTI_PRI_NNZ_INDEX "\n", z);
+                printf("z: %" HIPARTI_PRI_NNZ_INDEX "\n", z);
             #endif
 
             for(ptiIndex m=0; m<nmodes; ++m)

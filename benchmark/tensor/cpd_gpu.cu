@@ -92,7 +92,7 @@ int main(int argc, char ** argv) {
             sscanf(optarg, "%d", &cuda_dev_id);
             break;
         case 'r':
-            sscanf(optarg, "%u"HIPARTI_SCN_INDEX, &R);
+            sscanf(optarg, "%u" HIPARTI_SCN_INDEX, &R);
             break;
         case 'u':
             sscanf(optarg, "%d", &use_reduce);

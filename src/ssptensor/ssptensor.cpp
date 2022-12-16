@@ -36,12 +36,12 @@ int ptiNewSemiSparseTensor(ptiSemiSparseTensor *tsr, ptiIndex nmodes, ptiIndex m
         pti_CheckError(PTIERR_SHAPE_MISMATCH, "SspTns New", "nmodes < 2");
     }
     tsr->nmodes = nmodes;
-    tsr->ndims = malloc(nmodes * sizeof *tsr->ndims);
+    tsr->ndims = reinterpret_cast<ptiIndex*>(malloc(nmodes * sizeof *tsr->ndims));
     pti_CheckOSError(!tsr->ndims, "SspTns New");
     memcpy(tsr->ndims, ndims, nmodes * sizeof *tsr->ndims);
     tsr->mode = mode;
     tsr->nnz = 0;
-    tsr->inds = malloc(nmodes * sizeof *tsr->inds);
+    tsr->inds = reinterpret_cast<ptiIndexVector*>(malloc(nmodes * sizeof *tsr->inds));
     pti_CheckOSError(!tsr->inds, "SspTns New");
     for(i = 0; i < nmodes; ++i) {
         result = ptiNewIndexVector(&tsr->inds[i], 0, 0);
@@ -63,12 +63,12 @@ int ptiCopySemiSparseTensor(ptiSemiSparseTensor *dest, const ptiSemiSparseTensor
     int result;
     assert(src->nmodes >= 2);
     dest->nmodes = src->nmodes;
-    dest->ndims = malloc(dest->nmodes * sizeof *dest->ndims);
+    dest->ndims = reinterpret_cast<ptiIndex *>(malloc(dest->nmodes * sizeof *dest->ndims));
     pti_CheckOSError(!dest->ndims, "SspTns Copy");
     memcpy(dest->ndims, src->ndims, src->nmodes * sizeof *src->ndims);
     dest->mode = src->mode;
     dest->nnz = src->nnz;
-    dest->inds = malloc(dest->nmodes * sizeof *dest->inds);
+    dest->inds = reinterpret_cast<ptiIndexVector *>(malloc(dest->nmodes * sizeof *dest->inds));
     pti_CheckOSError(!dest->inds, "SspTns Copy");
     for(i = 0; i < dest->nmodes; ++i) {
         result = ptiCopyIndexVector(&dest->inds[i], &src->inds[i], 1);
@@ -110,24 +110,24 @@ int ptiNewSemiSparseTensorGeneral(ptiSemiSparseTensorGeneral *tsr, ptiIndex nmod
         pti_CheckError(PTIERR_SHAPE_MISMATCH, "SspTns New", "nmodes < 2");
     }
     tsr->nmodes = nmodes;
-    tsr->ndims = malloc(nmodes * sizeof *tsr->ndims);
+    tsr->ndims = reinterpret_cast<ptiIndex *>(malloc(nmodes * sizeof *tsr->ndims));
     pti_CheckOSError(!tsr->ndims, "SspTns New");
     memcpy(tsr->ndims, ndims, nmodes * sizeof *tsr->ndims);
 
     tsr->ndmodes = ndmodes;
-    tsr->dmodes = malloc(nmodes * sizeof *tsr->dmodes);
+    tsr->dmodes = reinterpret_cast<ptiIndex *>(malloc(nmodes * sizeof *tsr->dmodes));
     pti_CheckOSError(!tsr->dmodes, "SspTns New");
     memcpy(tsr->dmodes, dmodes, nmodes * sizeof *tsr->dmodes);
 
     ptiIndex nsmodes = nmodes - ndmodes;
     tsr->nnz = 0;
-    tsr->inds = malloc(nsmodes * sizeof *tsr->inds);
+    tsr->inds = reinterpret_cast<ptiIndexVector *>(malloc(nsmodes * sizeof *tsr->inds));
     pti_CheckOSError(!tsr->inds, "SspTns New");
     for(i = 0; i < nsmodes; ++i) {
         result = ptiNewIndexVector(&tsr->inds[i], 0, 0);
         pti_CheckError(result, "SspTns New", NULL);
     }
-    tsr->strides = malloc(ndmodes * sizeof *tsr->strides);
+    tsr->strides = reinterpret_cast<ptiIndex *>(malloc(ndmodes * sizeof *tsr->strides));
     for(i = 0; i < ndmodes; ++i) {
         tsr->strides[i] = ((ndims[dmodes[i]]-1)/8+1)*8;
     }

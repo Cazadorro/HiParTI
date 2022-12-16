@@ -23,19 +23,19 @@ int ptiDumpSparseMatrix(const ptiSparseMatrix *mtx, ptiIndex start_index, FILE *
 {
     int iores;
     ptiNnzIndex i;
-    iores = fprintf(fp, "%"HIPARTI_PRI_INDEX, mtx->nrows);
+    iores = fprintf(fp, "%" HIPARTI_PRI_INDEX, mtx->nrows);
     pti_CheckOSError(iores < 0, "SpMtx Dump");
-    iores = fprintf(fp, " %"HIPARTI_PRI_INDEX, mtx->ncols);
+    iores = fprintf(fp, " %" HIPARTI_PRI_INDEX, mtx->ncols);
     pti_CheckOSError(iores < 0, "SpMtx Dump");
-    iores = fprintf(fp, " %"HIPARTI_PRI_NNZ_INDEX "\n", mtx->nnz);
+    iores = fprintf(fp, " %" HIPARTI_PRI_NNZ_INDEX "\n", mtx->nnz);
     pti_CheckOSError(iores < 0, "SpMtx Dump");
 
     for(i = 0; i < mtx->nnz; ++i) {
-        iores = fprintf(fp, "%"HIPARTI_PRI_INDEX "\t", mtx->rowind.data[i] + start_index);
+        iores = fprintf(fp, "%" HIPARTI_PRI_INDEX "\t", mtx->rowind.data[i] + start_index);
         pti_CheckOSError(iores < 0, "SpMtx Dump");
-        iores = fprintf(fp, "%"HIPARTI_PRI_INDEX "\t", mtx->colind.data[i] + start_index);
+        iores = fprintf(fp, "%" HIPARTI_PRI_INDEX "\t", mtx->colind.data[i] + start_index);
         pti_CheckOSError(iores < 0, "SpMtx Dump");
-        iores = fprintf(fp, "%"HIPARTI_PRI_VALUE "\n", (double) mtx->values.data[i]);
+        iores = fprintf(fp, "%" HIPARTI_PRI_VALUE "\n", (double) mtx->values.data[i]);
         pti_CheckOSError(iores < 0, "SpMtx Dump");
     }
     return 0;

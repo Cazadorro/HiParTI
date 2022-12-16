@@ -37,11 +37,11 @@ double ptiSparseTensorDensity(ptiSparseTensor const * const tsr)
 void ptiSparseTensorStatus(ptiSparseTensor *tsr, FILE *fp)
 {
   fprintf(fp, "COO Sparse Tensor information (use ptiIndex, ptiValue))---------\n");
-  fprintf(fp, "DIMS=%"HIPARTI_PRI_INDEX, tsr->ndims[0]);
+  fprintf(fp, "DIMS=%" HIPARTI_PRI_INDEX, tsr->ndims[0]);
   for(ptiIndex m=1; m < tsr->nmodes; ++m) {
-    fprintf(fp, "x%"HIPARTI_PRI_INDEX, tsr->ndims[m]);
+    fprintf(fp, "x%" HIPARTI_PRI_INDEX, tsr->ndims[m]);
   }
-  fprintf(fp, " NNZ=%"HIPARTI_PRI_NNZ_INDEX, tsr->nnz);
+  fprintf(fp, " NNZ=%" HIPARTI_PRI_NNZ_INDEX, tsr->nnz);
   fprintf(fp, " DENSITY=%e\n" , ptiSparseTensorDensity(tsr));
 
   fprintf(fp, "Average slice length (c): ");

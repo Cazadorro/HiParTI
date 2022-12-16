@@ -68,10 +68,10 @@ int main(int argc, char * const argv[])
             ptiAssert(fo != NULL);
             break;
         case 'b':
-            sscanf(optarg, "%"HIPARTI_SCN_ELEMENT_INDEX, &sb_bits);
+            sscanf(optarg, "%" HIPARTI_SCN_ELEMENT_INDEX, &sb_bits);
             break;
         case 'k':
-            sscanf(optarg, "%"HIPARTI_SCN_ELEMENT_INDEX, &sk_bits);
+            sscanf(optarg, "%" HIPARTI_SCN_ELEMENT_INDEX, &sk_bits);
             break;
         case 'd':
             sscanf(optarg, "%d", &cuda_dev_id);

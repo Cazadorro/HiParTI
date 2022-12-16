@@ -89,13 +89,13 @@ int main(int argc, char ** argv) {
             printf("output file: %s\n", optarg); fflush(stdout);
             break;
         case 'm':
-            sscanf(optarg, "%"HIPARTI_SCN_INDEX, &mode);
+            sscanf(optarg, "%" HIPARTI_SCN_INDEX, &mode);
             break;
         case 'b':
-            sscanf(optarg, "%"HIPARTI_SCN_ELEMENT_INDEX, &sb_bits);
+            sscanf(optarg, "%" HIPARTI_SCN_ELEMENT_INDEX, &sb_bits);
             break;
         case 'k':
-            sscanf(optarg, "%"HIPARTI_SCN_ELEMENT_INDEX, &sk_bits);
+            sscanf(optarg, "%" HIPARTI_SCN_ELEMENT_INDEX, &sk_bits);
             break;
         case 's':
             sscanf(optarg, "%d", &sortcase);
@@ -112,7 +112,7 @@ int main(int argc, char ** argv) {
     }
 
     printf("sortcase: %d\n", sortcase);
-    printf("mode: %"HIPARTI_PRI_INDEX "\n", mode);
+    printf("mode: %" HIPARTI_PRI_INDEX "\n", mode);
 
     /* Load a sparse tensor from file as it is */
     ptiAssert(ptiLoadSparseTensor(&X, 1, fi) == 0);

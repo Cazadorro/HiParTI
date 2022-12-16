@@ -24,13 +24,18 @@
 /**
  * Global variables to store last error code and information
  */
-static __thread struct {
+struct impl_last_error{
     const char *module;
     int errcode;
     const char *file;
-    unsigned line;
+    unsigned int line;
     char *reason;
-} g_last_error = { NULL, 0, NULL, 0, NULL };
+};
+static thread_local impl_last_error g_last_error = { NULL,
+                                                 0,
+                                                 NULL,
+                                                 0,
+                                                 NULL };
 
 /**
  * Set last error information as specified and print the error message.
@@ -44,7 +49,7 @@ void pti_ComplainError(const char *module, int errcode, const char *file, unsign
     free(g_last_error.reason);
     if(reason) {
         size_t len = strlen(reason);
-        g_last_error.reason = malloc(len+1);
+        g_last_error.reason = reinterpret_cast<char *>(malloc(len+1));
         if(!g_last_error.reason) {
             abort();
         }

@@ -16,17 +16,35 @@
     If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <ctime>
+#include <cstddef>
+#include <cstdio>
+
+#if defined(_WIN32)
+#include <chrono>
+#include <ctime>
+typedef struct timeval {
+    long tv_sec;
+    long tv_usec;
+} timeval;
+int gettimeofday(struct timeval* tp, struct timezone* tzp) {
+    namespace sc = std::chrono;
+    sc::system_clock::duration d = sc::system_clock::now().time_since_epoch();
+    sc::seconds s = sc::duration_cast<sc::seconds>(d);
+    tp->tv_sec = s.count();
+    tp->tv_usec = sc::duration_cast<sc::microseconds>(d - s).count();
+    return 0;
+}
+#else
 #include <sys/time.h>
-#include <stddef.h>
-#include <stdio.h>
+#endif // _WIN32
 
-
-typedef struct {
+struct Timer{
   int running;
   double seconds;
-  struct timeval Start;
-  struct timeval Stop;
-} Timer;
+  timeval Start;
+  timeval Stop;
+};
 
 
 void timer_reset(Timer * const kTimer);

@@ -63,7 +63,7 @@ int main(int argc, char * const argv[]) {
             ptiAssert(fo != NULL);
             break;
         case 'r':
-            sscanf(optarg, "%"HIPARTI_SCN_INDEX, &R);
+            sscanf(optarg, "%" HIPARTI_SCN_INDEX, &R);
             break;
         case 'd':
             sscanf(optarg, "%d", &cuda_dev_id);

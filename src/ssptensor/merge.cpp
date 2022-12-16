@@ -37,7 +37,7 @@ int pti_SemiSparseTensorMergeValues(ptiSemiSparseTensor *tsr) {
         return 0;
     }
 
-    buffer = malloc(tsr->stride * sizeof (ptiValue));
+    buffer = reinterpret_cast<ptiValue *>(malloc(tsr->stride * sizeof (ptiValue)));
     pti_CheckOSError(!buffer, "SspTns Merge");
 
     result = ptiNewNnzIndexVector(&collided, 0, 0);

@@ -34,7 +34,7 @@ int ptiOmpSparseTensorMulMatrix(ptiSemiSparseTensor *Y, ptiSparseTensor * const 
     }
     ptiSparseTensorSortIndexAtMode(X, mode, 0);
     // jli: try to avoid malloc in all operation functions.
-    ind_buf = malloc(X->nmodes * sizeof *ind_buf);
+    ind_buf = reinterpret_cast<ptiIndex *>(malloc(X->nmodes * sizeof *ind_buf));
     pti_CheckOSError(!ind_buf, "OMP  SpTns * Mtx");
     for(m = 0; m < X->nmodes; ++m) {
         ind_buf[m] = X->ndims[m];

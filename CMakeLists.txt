@@ -1,7 +1,7 @@
 # Requires
 cmake_minimum_required(VERSION 3.2)  # CMake 3.2 supports CUDA 7.0
 project(HiParTI)
-
+set(CMAKE_CXX_STANDARD 20)
 # Enable unit test
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake-modules")
 include(CTest)
@@ -87,12 +87,12 @@ if(USE_OPENMP)
         endif()
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         if(DEFINED DEBUG)
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Wall /openmp /Od  /Zi -DADD_")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Wall /openmp /Od  /Zi -DADD_")
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Wall /openmp:llvm /openmp:experimental /Od  /Zi -DADD_")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Wall /openmp:llvm /openmp:experimental /Od  /Zi -DADD_")
         else()
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Wall /openmp /O2 -DADD_ ")
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Wall /openmp:llvm /openmp:experimental /O2 -DADD_ ")
             # -msse4 -ftree-vectorize -funroll-loops -fprefetch-loop-arrays -mfpmath=sse -ftree-vectorizer-verbose=2
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  /Wall /openmp /O2  -DADD_")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  /Wall /openmp:llvm /openmp:experimental /O2  -DADD_")
         endif()
     else()
 
@@ -199,7 +199,9 @@ endif()
 # A bug in FindCUDA module forces us to put "include_directories" before "cuda_add_library".
 # So we cannot use "target_include_directories" for target-wise include tracking.
 include_directories("include")
-link_libraries("m")
+if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    link_libraries("m")
+endif()
 add_subdirectory(external/abseil)
 
 find_package(unofficial-getopt-win32 REQUIRED COMPONENTS unofficial::getopt-win32::getopt)
@@ -235,11 +237,11 @@ get_filename_component(GETOPT_MAIN_LOC ${GETOPT_MAIN_LOC} PATH)
 set_target_properties(unofficial::getopt-win32::getopt PROPERTIES INCLUDE_DIRECTORIES "${GETOPT_MAIN_LOC}/../../include/")
 print_target_properties(absl::numeric)
 print_target_properties(unofficial::getopt-win32::getopt)
-print_target_properties(OpenBLAS)
+
 include_directories("${GETOPT_MAIN_LOC}/../../include/")
 
 if(USE_CUDA)
-    file(GLOB_RECURSE HiParTI_SRC RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "src/*.c" "src/*.cu" "src/*.h" "include/*.h")
+    file(GLOB_RECURSE HiParTI_SRC RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "src/*.c" "src/*.cpp" "src/*.cu" "src/*.h" "include/*.h")
     # MESSAGE( STATUS "HiParTI_SRC:         " ${HiParTI_SRC} )
 
     if(BUILD_SHARED)
@@ -251,7 +253,7 @@ if(USE_CUDA)
         CUDA_ADD_CUBLAS_TO_TARGET(HiParTI_s)
     endif()
 else()
-    file(GLOB_RECURSE HiParTI_SRC RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "src/*.c" "src/*.h" "include/*.h")
+    file(GLOB_RECURSE HiParTI_SRC RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "src/*.c" "src/*.cpp" "src/*.h" "include/*.h")
 
     if(BUILD_SHARED)
         add_library(HiParTI SHARED ${HiParTI_SRC})
@@ -270,15 +272,19 @@ if(BUILD_STATIC)
     target_link_libraries(HiParTI_s PUBLIC absl::numeric unofficial::getopt-win32::getopt)
 endif()
 
+
 if(USE_OpenBLAS)
+#    print_target_properties(HiParTI_s)
     find_package(OpenBLAS REQUIRED)
+    print_target_properties(OpenBLAS::OpenBLAS)
     add_definitions(-DHIPARTI_USE_OpenBLAS)
     if(BUILD_SHARED)
-        target_link_libraries(HiParTI PUBLIC openblas_64_shared)
+#        target_link_libraries(HiParTI PUBLIC OpenBLAS::OpenBLAS)
     endif()
     if(BUILD_STATIC)
-        target_link_libraries(HiParTI_s PUBLIC openblas_64_static)
+#        target_link_libraries(HiParTI_s PUBLIC OpenBLAS::OpenBLAS)
     endif()
+#    print_target_properties(HiParTI_s)
 endif()
 
 #get_target_property(TEST_INCLUDES unofficial::getopt-win32::getopt INCLUDE_DIRECTORIES)

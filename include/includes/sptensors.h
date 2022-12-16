@@ -43,7 +43,7 @@ void ptiGetWorstModeOrder(
 void ptiGetRandomShuffleElements(ptiSparseTensor *tsr);
 void ptiGetRandomShuffledIndices(ptiSparseTensor *tsr, ptiIndex ** map_inds);
 void ptiSparseTensorShuffleIndices(ptiSparseTensor *tsr, ptiIndex ** map_inds);
-void ptiSparseTensorInvMap(ptiSparseTensor *tsr, ptiIndex ** in_map_inds);
+int ptiSparseTensorInvMap(ptiSparseTensor *tsr, ptiIndex ** map_inds);
 void ptiSparseTensorShuffleModes(ptiSparseTensor *tsr, ptiIndex * mode_order);
 int ptiSparseTensorSetIndices(
     ptiSparseTensor *ref,
