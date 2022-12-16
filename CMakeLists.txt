@@ -259,7 +259,7 @@ else()
         add_library(HiParTI SHARED ${HiParTI_SRC})
     endif()
     if(BUILD_STATIC)
-        add_library(HiParTI_s STATIC ${HiParTI_SRC})
+        add_library(HiParTI_s STATIC ${HiParTI_SRC} src/sptensor/orderit.h)
     endif()
 endif()
 

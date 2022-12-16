@@ -7,6 +7,40 @@
 #include "sptensor.h"
 #include "renumber.h"
 
+
+void initColDLL(colStruct *clms, ptiIndex n)
+{
+    ptiIndex jj;
+
+    clms[1].next = 2;
+    clms[0].prev =  clms[1].prev = 0;
+    clms[n].next = 0;
+    clms[n].prev = n-1;
+    clms[1].svar = clms[n].svar = 1;
+    for(jj = 2; jj<=n-1; jj++)/*init all in a single svar*/
+    {
+        clms[jj].svar = 1;
+        clms[jj].next = jj+1;
+        clms[jj].prev = jj-1;
+    }
+}
+
+void initSetDLL(setStruct *csets, ptiIndex n)
+{
+    ptiIndex jj;
+
+    csets[1].flag = 0;
+    csets[1].prev = csets[1].next =  0;
+    csets[1].var = 1;
+    csets[1].sz = n;
+    csets[1].tail = n;
+
+    for(jj = 2; jj<=n+1; jj++){/*init all in a single svar*/
+        csets[jj].flag = 0;
+        csets[jj].sz = 0;
+        csets[jj].prev =  csets[jj].next = 0;
+    }
+}
 /*Interface to everything in this file is orderit(.., ..)*/
 
 /*function declarations*/
@@ -478,7 +512,7 @@ static void ptiLexiOrderPerMode(ptiSparseTensor * tsr, ptiIndex mode, ptiIndex *
     t1 =u_seconds()-t0;
     printf("mode %u, create time %.2f\n", mode, t1);
     
-    rowPtrs = realloc(rowPtrs, (sizeof(ptiNnzIndex) * (mtxNrows + 2)));
+    rowPtrs = reinterpret_cast<ptiNnzIndex* >(realloc(rowPtrs, (sizeof(ptiNnzIndex) * (mtxNrows + 2))));
     cprm = (ptiIndex *) malloc(sizeof(ptiIndex) * (mode_dim + 1));
     invcprm = (ptiIndex *) malloc(sizeof(ptiIndex) * (mode_dim + 1));
     saveOrgIds = (ptiIndex *) malloc(sizeof(ptiIndex) * (mode_dim + 1));

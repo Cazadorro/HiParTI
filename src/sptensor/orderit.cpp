@@ -573,39 +573,7 @@ static ptiIndex countNumItems(ptiIndex *setnext, ptiIndex *tailset, ptiIndex fir
 
 
 
-void initColDLL(colStruct *clms, ptiIndex n)
-{
-    ptiIndex jj;
 
-    clms[1].next = 2;
-    clms[0].prev =  clms[1].prev = 0;
-    clms[n].next = 0;
-    clms[n].prev = n-1;
-    clms[1].svar = clms[n].svar = 1;
-    for(jj = 2; jj<=n-1; jj++)/*init all in a single svar*/
-    {
-        clms[jj].svar = 1;
-        clms[jj].next = jj+1;
-        clms[jj].prev = jj-1;
-    }
-}
-
-void initSetDLL(setStruct *csets, ptiIndex n)
-{
-    ptiIndex jj;
-
-    csets[1].flag = 0;
-    csets[1].prev = csets[1].next =  0;
-    csets[1].var = 1;
-    csets[1].sz = n;
-    csets[1].tail = n;
-
-    for(jj = 2; jj<=n+1; jj++){/*init all in a single svar*/    
-        csets[jj].flag = 0;    
-        csets[jj].sz = 0;
-        csets[jj].prev =  csets[jj].next = 0;
-    }
-}
 
 
 void lexOrderThem(ptiNnzIndex m, ptiIndex n, ptiNnzIndex *ia, ptiIndex *cols, ptiIndex *cprm)
