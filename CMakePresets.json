@@ -18,7 +18,7 @@
         "USE_BLAS": "OFF",
         "USE_OpenBLAS": "ON",
         "USE_MAGMA": "OFF",
-        "USE_CUDA": "OFF",
+        "USE_CUDA": "ON",
         "USE_LAPACK": "OFF",
         "BUILD_STATIC": "ON",
         "BUILD_SHARED": "OFF",
