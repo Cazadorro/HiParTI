@@ -16,6 +16,7 @@
     If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "hicoo_utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
@@ -161,6 +162,15 @@ int main(int argc, char ** argv) {
         printf("niters_renum: %d\n\n", niters_renum);
 
     ptiAssert(ptiLoadSparseTensor(&tsr, 1, fi_name) == 0);
+    auto load_tsr_result = util::print_sparse(tsr);
+    std::cout << load_tsr_result;
+    std::cout << "\n\n\n\nXXX\n\n\n\n" << std::endl;
+    ptiSparseTensorSortIndex(&tsr, 1, 1);
+    auto test_result = util::print_sparse(tsr);
+    std::cout << test_result;
+    std::cout << "\n\n\n\nXXX\n\n\n\n" << std::endl;
+    std::cout << std::flush;
+
     // ptiSparseTensorSortIndex(&tsr, 1);
     fclose(fi);
     ptiSparseTensorStatus(&tsr, stdout);
@@ -222,7 +232,11 @@ int main(int argc, char ** argv) {
     ptiTimer convert_timer;
     ptiNewTimer(&convert_timer, 0);
     ptiStartTimer(convert_timer);
-    
+
+    auto pre_hicoo_tsr_result = util::print_sparse(tsr);
+    std::cout << pre_hicoo_tsr_result;
+    std::cout << std::flush;
+
     ptiAssert(ptiSparseTensorToHiCOO(&hitsr, &max_nnzb, &tsr, sb_bits, sk_bits, sc_bits, tk) == 0);
 
     ptiStopTimer(convert_timer);

@@ -28,6 +28,9 @@ extern "C" {
 #endif
 
 #ifndef unlikely
+#if __cplusplus >= 202002L
+#define unlikely(x) (x)
+#endif
 #define unlikely(x) __builtin_expect(!!(x), 0)
 #endif
 
@@ -45,7 +48,7 @@ extern "C" {
     }
 #else
 #define pti_CheckError(errcode, module, reason) \
-    if(unlikely((errcode) != 0)) { \
+    if((errcode) != 0) [[unlikely]]{ \
         return (errcode); \
     }
 #endif

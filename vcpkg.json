@@ -2,6 +2,7 @@
   "name": "hiparti",
   "version-string": "0.1.0",
   "dependencies": [
+    "abseil",
     "getopt",
     "getopt-win32"
   ]

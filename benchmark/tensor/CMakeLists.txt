@@ -18,6 +18,10 @@ foreach(BENCH_SRC IN LISTS BENCH_SRCS)
 #        add_executable("${BENCH_EXE}" "${BENCH_SRC}")
 #    endif()
     add_executable("${BENCH_EXE}" "${BENCH_SRC}")
+    target_sources("${BENCH_EXE}" PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/hicoo_utils.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/hicoo_utils.cpp)
+    target_include_directories("${BENCH_EXE}" PRIVATE  ${CMAKE_CURRENT_SOURCE_DIR}/)
 #    set_target_properties("${BENCH_EXE}" PROPERTIES C_STANDARD 99)
     if(BUILD_STATIC)
         target_link_libraries("${BENCH_EXE}" PRIVATE HiParTI_s)
