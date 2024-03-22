@@ -8,9 +8,10 @@
 #include <HiParTI.h>
 #include "../src/sptensor/sptensor.h"
 #include "../src/sptensor/hicoo/hicoo.h"
+#include "../include/includes/structs.h"
 #include <iostream>
 #include <sstream>
-
+#include <csrk.h>
 namespace util {
 //    typedef struct {
 //        ptiIndex nmodes;      /// # modes
@@ -54,6 +55,51 @@ namespace util {
         }
         return ss.str();
     }
+
+
+    struct CSRTensor{
+        std::int32_t rows;
+        std::int32_t cols;
+        std::int32_t nnz;
+        std::vector<std::uint32_t> row_start;
+        std::vector<std::uint32_t> col_idxs;
+        std::vector<float> values;
+    };
+
+    inline CSRTensor coo_to_csr(ptiSparseTensor* coo_tensor){
+        //TODO assumes coo_tensor sorted, assumes y dim (row dim) is the first set of indices.
+        // Also assumes 2D.
+        CSRTensor csr_tensor;
+        csr_tensor.rows = coo_tensor->ndims[0];
+        csr_tensor.cols = coo_tensor->ndims[1];
+        csr_tensor.nnz = coo_tensor->nnz;
+
+        csr_tensor.row_start.push_back(0);
+        std::size_t previous_row_idx = coo_tensor->inds[0].data[0];
+        csr_tensor.col_idxs.reserve(csr_tensor.nnz);
+        csr_tensor.values.reserve(csr_tensor.nnz);
+        for(std::size_t idx = 0; idx < csr_tensor.nnz; ++idx){
+            csr_tensor.col_idxs.push_back(coo_tensor->inds[1].data[idx]);
+            csr_tensor.values.push_back(coo_tensor->values.data[idx]);
+            if(previous_row_idx != coo_tensor->inds[0].data[idx]){
+                csr_tensor.row_start.push_back(idx);
+                previous_row_idx = coo_tensor->inds[0].data[idx];
+            }
+        }
+        //todo don't know if we need this.
+        csr_tensor.row_start.push_back(csr_tensor.nnz);
+        return std::move(csr_tensor);
+    }
+
+
+    inline CSRk_Graph coo_to_csrk(ptiSparseTensor* coo_tensor){
+
+    }
+
+
+
+
+
 }
 
 #endif //HIPARTI_HICOO_UTILS_H

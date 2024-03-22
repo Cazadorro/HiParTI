@@ -1,5 +1,5 @@
 # Requires
-cmake_minimum_required(VERSION 3.2)  # CMake 3.2 supports CUDA 7.0
+cmake_minimum_required(VERSION 3.25)  # CMake 3.2 supports CUDA 7.0
 project(HiParTI)
 cmake_policy(SET CMP0104 NEW)
 set(CMAKE_CXX_STANDARD 20)
@@ -245,6 +245,8 @@ set_target_properties(unofficial::getopt-win32::getopt PROPERTIES INCLUDE_DIRECT
 print_target_properties(absl::numeric)
 print_target_properties(unofficial::getopt-win32::getopt)
 
+add_subdirectory(./csrk/)
+
 include_directories("${GETOPT_MAIN_LOC}/../../include/")
 
 if(USE_CUDA)
@@ -278,10 +280,12 @@ endif()
 if(BUILD_SHARED)
 #    set_target_properties(HiParTI PROPERTIES C_STANDARD 99)
     target_link_libraries(HiParTI PUBLIC absl::numeric unofficial::getopt-win32::getopt)
+    target_link_libraries(HiParTI PUBLIC spmv-csrk)
 endif()
 if(BUILD_STATIC)
 #    set_target_properties(HiParTI_s PROPERTIES C_STANDARD 99)
     target_link_libraries(HiParTI_s PUBLIC absl::numeric unofficial::getopt-win32::getopt)
+    target_link_libraries(HiParTI_s PUBLIC spmv-csrk)
 endif()
 
 

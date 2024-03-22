@@ -4,6 +4,7 @@
   "dependencies": [
     "abseil",
     "getopt",
+    "boost-graph",
     "getopt-win32"
   ]
 }

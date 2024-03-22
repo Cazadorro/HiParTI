@@ -5,6 +5,11 @@
 #include "HiParTI.h"
 #include "renumber.h"
 
+#define TEST_CSR_ORDER_OUTPUT
+#ifdef TEST_CSR_ORDER_OUTPUT
+#include <iostream>
+#endif
+
 /*Interface to everything in this file is orderit(.., ..)*/
 
 /*function declarations*/
@@ -692,6 +697,13 @@ void lexOrderThem(ptiNnzIndex m, ptiIndex n, ptiNnzIndex *ia, ptiIndex *cols, pt
 /**************************************************************/
 #define myAbs(x) (((x) < 0) ? -(x) : (x))
 
+// SB:
+// coords is the SOA x,y,z... list of COO indexes
+// nnz = number of non zeros
+// nm = number of modes
+// ndims = the length of each mode/dimension (length of x, y, and z)
+// dim = the given dimension processing.
+// orgIds = the origional order of all the IDs (same size as coords)
 void orderDim(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, ptiIndex * ndims, ptiIndex const dim, ptiIndex ** orgIds)
 {
     ptiNnzIndex * rowPtrs=NULL, z, atRowPlus1, mtxNrows;
@@ -699,7 +711,7 @@ void orderDim(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, ptiI
     ptiIndex * cprm=NULL, * invcprm = NULL, * saveOrgIds;
     ptiNnzIndex mtrxNnz;
 
-   ptiIndex * mode_order = (ptiIndex *) malloc (sizeof(ptiIndex) * (nm - 1));
+    ptiIndex * mode_order = (ptiIndex *) malloc (sizeof(ptiIndex) * (nm - 1));
     ptiIndex i = 0;
     for(ptiIndex m = 0; m < nm; ++m) {
         if (m != dim) {
@@ -711,6 +723,10 @@ void orderDim(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, ptiI
     double t1, t0;
     t0 = u_seconds();
     // mySort(coords,  nnz-1, nm, ndims, dim);
+    //SB:
+    // sorts coords according to all dims except dim, where items are refered with newIndices
+    // an iterative quicksort
+    // appears to only be relevant to creating CSR version
     mySortFast(coords,  nnz-1, nm, ndims, dim, mode_order);
     t1 = u_seconds()-t0;
     printf("dim %u, sort time %.2f\n", dim, t1);
@@ -735,6 +751,9 @@ void orderDim(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, ptiI
     mtrxNnz = 2;/* start filling from the second element */
     
     t0 = u_seconds();
+    //SB:
+    //generates row pointers for CSR and increments col ids.
+    //lexigraphically compares the indexes for the coordinates first.
     for (z = 1; z < nnz; z++)
     {
         // if(isLessThanOrEqualTo( coords[z], coords[z-1], nm, ndims, dim) != 0)
@@ -749,6 +768,24 @@ void orderDim(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, ptiI
     printf("dim %u create time %.2f\n", dim, t1);
     
     rowPtrs = reinterpret_cast<ptiNnzIndex*>(realloc(rowPtrs, (sizeof(ptiNnzIndex) * (mtxNrows+2))));
+#ifdef TEST_CSR_ORDER_OUTPUT
+    {
+        std::cout << "row pointers:" << std::endl;
+        for (std::size_t idx = 0; idx < (mtxNrows + 2); ++idx) {
+            std::cout << rowPtrs[idx] << ", ";
+        }
+        std::cout << std::endl;
+        std::cout << "nnz " << nnz << " mtxNrows " << mtxNrows << std::endl;
+//        if ((mtxNrows + 2) == (nnz + 2)) {
+//            std::cout << "nnz and mtxNrows match" << std::endl;
+//        }
+        std::cout << "colIds:" << std::endl;
+        for (std::size_t idx = 0; idx < (nnz + 2); ++idx) {
+            std::cout << colIds[idx] << ", ";
+        }
+        std::cout << std::endl;
+    }
+#endif
     cprm = (ptiIndex *) malloc(sizeof(ptiIndex) * (ndims[dim]+1));
     invcprm = (ptiIndex *) malloc(sizeof(ptiIndex) * (ndims[dim]+1));
     saveOrgIds = (ptiIndex *) malloc(sizeof(ptiIndex) * (ndims[dim]+1));
@@ -1103,3 +1140,227 @@ void orderforHiCOObfsLike(ptiIndex const nm, ptiNnzIndex const nnz, ptiIndex * n
     
 }
 /********************** Internals end *************************/
+
+
+/** EXTRA **/
+#include <csrk.h>
+void orderBandK(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, ptiIndex * ndims, ptiIndex const dim, ptiIndex ** orgIds, ptiValueVector values)
+{
+    using nnzIndexType = std::uint32_t;
+    nnzIndexType * rowPtrs=NULL, z, atRowPlus1, mtxNrows;
+    ptiIndex * colIds=NULL, c;
+    ptiIndex * cprm=NULL, * invcprm = NULL, * saveOrgIds;
+    nnzIndexType mtrxNnz;
+
+    ptiIndex * mode_order = (ptiIndex *) malloc (sizeof(ptiIndex) * (nm - 1));
+    ptiIndex i = 0;
+    for(ptiIndex m = 0; m < nm; ++m) {
+        if (m != dim) {
+            mode_order[i] = m;
+            ++ i;
+        }
+    }
+
+    double t1, t0;
+    t0 = u_seconds();
+    // mySort(coords,  nnz-1, nm, ndims, dim);
+    //SB:
+    // sorts coords according to all dims except dim, where items are refered with newIndices
+    // an iterative quicksort
+    // appears to only be relevant to creating CSR version
+    mySortFast(coords,  nnz-1, nm, ndims, dim, mode_order);
+    t1 = u_seconds()-t0;
+    printf("dim %u, sort time %.2f\n", dim, t1);
+    // printCoords(coords, nnz, nm);
+    /* we matricize this (others x thisDim), whose columns will be renumbered */
+
+    /* on the matrix all arrays are from 1, and all indices are from 1. */
+
+    rowPtrs = (nnzIndexType *) malloc(sizeof(nnzIndexType ) * (nnz+2)); /*large space*/
+    colIds = (ptiIndex *) malloc(sizeof(ptiIndex) * (nnz+2)); /*large space*/
+
+    if(rowPtrs == NULL || colIds == NULL)
+    {
+        printf("could not allocate.exiting \n");
+        exit(12);
+    }
+
+    rowPtrs[0] = 0; /* we should not access this, that is why. */
+    rowPtrs [1] = 1;
+    colIds[1] = coords[0][dim]+1;
+    atRowPlus1 = 2;
+    mtrxNnz = 2;/* start filling from the second element */
+
+    t0 = u_seconds();
+    //SB:
+    //generates row pointers for CSR and increments col ids.
+    //lexigraphically compares the indexes for the coordinates first.
+    for (z = 1; z < nnz; z++)
+    {
+        // if(isLessThanOrEqualTo( coords[z], coords[z-1], nm, ndims, dim) != 0)
+        if(isLessThanOrEqualToFast( coords[z], coords[z-1], nm, mode_order) != 0)
+            rowPtrs[atRowPlus1 ++] = mtrxNnz; /* close the previous row and start a new one. */
+
+        colIds[mtrxNnz++] = coords[z][dim]+1;
+    }
+    rowPtrs[atRowPlus1] = mtrxNnz;
+    mtxNrows = atRowPlus1-1;
+    t1 =u_seconds()-t0;
+    printf("dim %u create time %.2f\n", dim, t1);
+
+    rowPtrs = reinterpret_cast<nnzIndexType *>(realloc(rowPtrs, (sizeof(nnzIndexType ) * (mtxNrows+2))));
+#ifdef TEST_CSR_ORDER_OUTPUT
+    {
+        std::cout << "row pointers:" << std::endl;
+        for (std::size_t idx = 0; idx < (mtxNrows + 2); ++idx) {
+            std::cout << rowPtrs[idx] << ", ";
+        }
+        std::cout << std::endl;
+        std::cout << "nnz " << nnz << " mtxNrows " << mtxNrows << std::endl;
+//        if ((mtxNrows + 2) == (nnz + 2)) {
+//            std::cout << "nnz and mtxNrows match" << std::endl;
+//        }
+        std::cout << "colIds:" << std::endl;
+        for (std::size_t idx = 0; idx < (nnz + 2); ++idx) {
+            std::cout << colIds[idx] << ", ";
+        }
+        std::cout << std::endl;
+    }
+#endif
+    cprm = (ptiIndex *) malloc(sizeof(ptiIndex) * (ndims[dim]+1));
+    invcprm = (ptiIndex *) malloc(sizeof(ptiIndex) * (ndims[dim]+1));
+    saveOrgIds = (ptiIndex *) malloc(sizeof(ptiIndex) * (ndims[dim]+1));
+    /*    checkRepeatIndex(mtxNrows, rowPtrs, colIds, ndims[dim] );*/
+
+    // printf("rowPtrs: \n");
+    // ptiDumpNnzIndexArray(rowPtrs, mtxNrows + 2, stdout);
+    // printf("colIds: \n");
+    // ptiDumpIndexArray(colIds, nnz + 2, stdout);
+
+
+    const char * kernelType = "spmv";
+    const char * corseningType = "HAND";
+    const char * orderingType = "";
+    std::vector<int> supRowSizes = {1};
+    CSRk_Graph A_mat(mtxNrows, ndims[dim], nnz, rowPtrs, colIds, values.data, kernelType,
+                     orderingType, corseningType, false, 2, supRowSizes.data());
+    A_mat.putInCSRkFormat();
+
+    //TODO, what the heck is CPRM?
+//    t0 = u_seconds();
+//    lexOrderThem(mtxNrows, ndims[dim], rowPtrs, colIds, cprm);
+//    t1 =u_seconds()-t0;
+    printf("dim %u lexorder time %.2f\n", dim, t1);
+    // printf("cprm: \n");
+    // ptiDumpIndexArray(cprm, ndims[dim] + 1, stdout);
+
+    /* update orgIds and modify coords */
+    for (c=0; c < ndims[dim]; c++)
+    {
+        invcprm[cprm[c+1]-1] = c;
+        saveOrgIds[c] = orgIds[dim][c];
+    }
+    for (c=0; c < ndims[dim]; c++)
+        orgIds[dim][c] = saveOrgIds[cprm[c+1]-1];
+
+    // printf("invcprm: \n");
+    // ptiDumpIndexArray(invcprm, ndims[dim] + 1, stdout);
+
+    /*rename the dim component of nonzeros*/
+    for (z = 0; z < nnz; z++)
+        coords[z][dim] = invcprm[coords[z][dim]];
+
+    free(mode_order);
+    free(saveOrgIds);
+    free(invcprm);
+    free(cprm);
+    free(colIds);
+    free(rowPtrs);
+}
+
+void orderitBandK(ptiSparseTensor * tsr, ptiIndex ** newIndices, int const renumber, ptiIndex const iterations)
+{
+    /*
+     newIndices is of size [nmodes][ndims[modes]] and assumed to be allocted.
+     It will be overwritten. No need to initialize.
+
+     We will need to reshuffle nonzeros. In order to not to touch tsr, we copy the indices of nonzeros
+     to a local variable coords. This is sort of transposed wrt tsr: its size is nnz * n, instead of n * nnz used in tsr.
+     */
+    ptiIndex i, m, nm = tsr->nmodes;
+    ptiNnzIndex z, nnz = tsr->nnz;
+    ptiIndex ** coords;
+    ptiIndex its;
+
+    /* copy the indices */
+    ptiTimer copy_coord_timer;
+    ptiNewTimer(&copy_coord_timer, 0);
+    ptiStartTimer(copy_coord_timer);
+
+    coords = (ptiIndex **) malloc(sizeof(ptiIndex*) * nnz);
+    for (z = 0; z < nnz; z++)
+    {
+        coords[z] = (ptiIndex *) malloc(sizeof(ptiIndex) * nm);
+        for (m = 0; m < nm; m++) {
+            coords[z][m] = tsr->inds[m].data[z];
+        }
+    }
+
+    ptiStopTimer(copy_coord_timer);
+    ptiPrintElapsedTime(copy_coord_timer, "Copy coordinate time");
+    ptiFreeTimer(copy_coord_timer);
+
+    /* checkEmptySlices(coords, nnz, nm, tsr->ndims); */
+
+    if (renumber == 1) {    /* Lexi-order renumbering */
+
+        ptiIndex ** orgIds = (ptiIndex **) malloc(sizeof(ptiIndex*) * nm);
+
+        for (m = 0; m < nm; m++)
+        {
+            orgIds[m] = (ptiIndex *) malloc(sizeof(ptiIndex) * tsr->ndims[m]);
+            for (i = 0; i < tsr->ndims[m]; i++)
+                orgIds[m][i] = i;
+        }
+
+        // FILE * debug_fp = fopen("old.txt", "w");
+        // fprintf(stdout, "orgIds:\n");
+        for (its = 0; its < iterations; its++)
+        {
+            printf("[Lexi-order] Optimizing the numbering for its %u\n", its+1);
+            for (m = 0; m < nm; m++)
+                orderBandk(coords, nnz, nm, tsr->ndims, m, orgIds, tsr->values);
+
+            // fprintf(stdout, "\niter %u:\n", its);
+            // for(ptiIndex m = 0; m < tsr->nmodes; ++m) {
+            //     ptiDumpIndexArray(orgIds[m], tsr->ndims[m], stdout);
+            // }
+        }
+        // fclose(debug_fp);
+
+        /* compute newIndices from orgIds. Reverse perm */
+        for (m = 0; m < nm; m++)
+            for (i = 0; i < tsr->ndims[m]; i++)
+                newIndices[m][orgIds[m][i]] = i;
+
+        for (m = 0; m < nm; m++)
+            free(orgIds[m]);
+        free(orgIds);
+
+    } else if (renumber == 2 ) {    /* BFS-like renumbering */
+        /*
+         REMARK (10 May 2018): this is the old bfs-like kind of thing. I hoped it would reduce the number of iterations,
+         but on a few cases it did not help much. Just leaving it in case we want to use it.
+         */
+        printf("[BFS-like]\n");
+        orderforHiCOObfsLike(nm, nnz, tsr->ndims, coords, newIndices);
+    }
+
+    // printf("set the new indices\n");
+/*    checkNewIndices(newIndices, nm, tsr->ndims);*/
+
+    for (z = 0; z < nnz; z++)
+        free(coords[z]);
+    free(coords);
+
+}
