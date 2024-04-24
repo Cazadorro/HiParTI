@@ -1203,8 +1203,7 @@ void orderBandK(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, pt
 
         colIds[mtrxNnz++] = coords[z][dim]+1;
     }
-    rowPtrs[atRowPlus1] = mtrxNnz;
-    mtxNrows = atRowPlus1-1;
+
     t1 =u_seconds()-t0;
     printf("dim %u create time %.2f\n", dim, t1);
 
@@ -1238,13 +1237,15 @@ void orderBandK(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, pt
     // ptiDumpIndexArray(colIds, nnz + 2, stdout);
 
 
-    const char * kernelType = "spmv";
+    const char * kernelType = "SpMV";
     const char * corseningType = "HAND";
     const char * orderingType = "";
     std::vector<int> supRowSizes = {1};
     CSRk_Graph A_mat(mtxNrows, ndims[dim], nnz, rowPtrs, colIds, values.data, kernelType,
                      orderingType, corseningType, false, 2, supRowSizes.data());
     A_mat.putInCSRkFormat();
+    //Need to take where items came from, set new locations to current ones (shown in loop in orderit I think)
+    //ords is the origional order first, then subsequent orderings later on.
 
     //TODO, what the heck is CPRM?
 //    t0 = u_seconds();
