@@ -9,6 +9,14 @@
 #ifdef TEST_CSR_ORDER_OUTPUT
 #include <iostream>
 #endif
+/** EXTRA INCLUDES**/
+#include <csrk.h>
+#include <ranges>
+#include <algorithm>
+#include <numeric>
+#include <vector>
+#include <span>
+/** END EXTRA **/
 
 /*Interface to everything in this file is orderit(.., ..)*/
 
@@ -604,22 +612,28 @@ void lexOrderThem(ptiNnzIndex m, ptiIndex n, ptiNnzIndex *ia, ptiIndex *cols, pt
     initColDLL(clms, n);
     initSetDLL(csets,  n);
 
-    for(jj = 1; jj<=n; jj++)
+    for(jj = 1; jj<=n; jj++) {
         cprm[jj] = 2 * n;
+    }
     
     firstset = 1;
     freeIdList[0] = 0;
     
-    for(jj= 1; jj<=n; jj++)
-        freeIdList[jj] = jj+1;/*1 is used as a set id*/
+    for(jj= 1; jj<=n; jj++) {
+        freeIdList[jj] = jj + 1;/*1 is used as a set id*/
+    }
 
     freeIdTop = 1;
     for(j=1; j<=m; j++){
+        //for row (j) start to row (j) end
         jend = ia[j+1]-1;
         for(jcol = ia[j]; jcol <= jend ; jcol++){
+            //iterate through column indices
             acol= cols[jcol];
+            //grab the "column set index"
             s = clms[acol].svar;
 
+            //if
             if( csets[s].flag < j){/*first occurence of supervar s in j*/            
                 csets[s].flag = j;
                 if(csets[s].sz == 1 && csets[s].tail != acol){
@@ -711,6 +725,7 @@ void orderDim(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, ptiI
     ptiIndex * cprm=NULL, * invcprm = NULL, * saveOrgIds;
     ptiNnzIndex mtrxNnz;
 
+    //mode order that contains everything *except* our current mode.
     ptiIndex * mode_order = (ptiIndex *) malloc (sizeof(ptiIndex) * (nm - 1));
     ptiIndex i = 0;
     for(ptiIndex m = 0; m < nm; ++m) {
@@ -757,6 +772,10 @@ void orderDim(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, ptiI
     for (z = 1; z < nnz; z++)
     {
         // if(isLessThanOrEqualTo( coords[z], coords[z-1], nm, ndims, dim) != 0)
+        //SB checking the other two dimensions, ignoring column.
+        // not bothering with column order (could be any thing within a "row" (ie non dim dimensions)
+        // could be that it doesn't matter? that you'd still have the same permutation regardless?
+
         if(isLessThanOrEqualToFast( coords[z], coords[z-1], nm, mode_order) != 0)
             rowPtrs[atRowPlus1 ++] = mtrxNnz; /* close the previous row and start a new one. */
         
@@ -1143,14 +1162,54 @@ void orderforHiCOObfsLike(ptiIndex const nm, ptiNnzIndex const nnz, ptiIndex * n
 
 
 /** EXTRA **/
-#include <csrk.h>
-void orderBandK(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, ptiIndex * ndims, ptiIndex const dim, ptiIndex ** orgIds, ptiValueVector values)
+std::vector<std::uint32_t> find_column_permutation(
+        std::span<const std::uint32_t> old_r_vec, std::span<const std::uint32_t> old_c_vec,
+        std::span<const unsigned int> new_r_vec, std::span<const unsigned int> new_c_vec,
+        std::span<const unsigned int> r_vec_perm, unsigned int dim_length){
+
+    assert(old_c_vec.size() == new_c_vec.size());
+    assert(old_r_vec.size() == new_r_vec.size());
+    assert(r_vec_perm.size() == new_r_vec.size());
+    auto row_count = old_r_vec.size();
+    auto col_count = old_c_vec.size();
+    std::vector<std::uint32_t> mapping(dim_length);
+    //currently will maintain empty column order, but maybe better not to do that, and shove empty to the end? Seems to
+    // have no practical consequence, since empty isn't stored anyway?
+    std::iota(mapping.begin(), mapping.end(), 0);
+
+    //every mapping is assumed to be in order, until changed.
+    for(std::size_t i = 0; i < row_count - 1; ++i){
+        auto old_start = old_r_vec[r_vec_perm[i]];
+        auto old_end = old_r_vec[r_vec_perm[i] + 1];
+        auto old_range = std::span(old_c_vec.begin() + old_start, old_c_vec.begin() + old_end);
+
+        auto new_start = new_r_vec[i];
+        auto new_end = new_r_vec[i + 1];
+        auto new_range = std::span(old_c_vec.begin() + new_start, old_c_vec.begin() + new_end);
+
+        assert(old_range.size() == new_range.size());
+
+        auto row_element_size = old_range.size();
+
+        //every element in new columns should map to old columns
+        //we do extra work here, but gaurantees changes to columns are properly mapped here.
+        for(std::size_t c = 0; c < row_element_size; ++c){
+            auto old_col_val = old_range[c];
+            auto new_col_val = new_range[c];
+            mapping[old_col_val] = new_col_val;
+        }
+    }
+    return mapping;
+}
+
+void orderBandK(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, ptiIndex * ndims, ptiIndex const dim, ptiIndex ** orgIds)
 {
     using nnzIndexType = std::uint32_t;
     nnzIndexType * rowPtrs=NULL, z, atRowPlus1, mtxNrows;
     ptiIndex * colIds=NULL, c;
-    ptiIndex * cprm=NULL, * invcprm = NULL, * saveOrgIds;
+    ptiIndex * invcprm = NULL, * saveOrgIds;
     nnzIndexType mtrxNnz;
+
 
     ptiIndex * mode_order = (ptiIndex *) malloc (sizeof(ptiIndex) * (nm - 1));
     ptiIndex i = 0;
@@ -1198,16 +1257,22 @@ void orderBandK(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, pt
     for (z = 1; z < nnz; z++)
     {
         // if(isLessThanOrEqualTo( coords[z], coords[z-1], nm, ndims, dim) != 0)
+        //SB checking the other two dimensions, ignoring column.
+        // not bothering with column order (could be any thing within a "row" (ie non dim dimensions)
+        // could be that it doesn't matter? that you'd still have the same permutation regardless?
+
         if(isLessThanOrEqualToFast( coords[z], coords[z-1], nm, mode_order) != 0)
             rowPtrs[atRowPlus1 ++] = mtrxNnz; /* close the previous row and start a new one. */
 
         colIds[mtrxNnz++] = coords[z][dim]+1;
     }
-
+    rowPtrs[atRowPlus1] = mtrxNnz;
+    mtxNrows = atRowPlus1-1;
     t1 =u_seconds()-t0;
     printf("dim %u create time %.2f\n", dim, t1);
-
+    //reserved space, now reallocating smaller.
     rowPtrs = reinterpret_cast<nnzIndexType *>(realloc(rowPtrs, (sizeof(nnzIndexType ) * (mtxNrows+2))));
+    auto row_ptrs_view = std::span(rowPtrs, mtxNrows+2);
 #ifdef TEST_CSR_ORDER_OUTPUT
     {
         std::cout << "row pointers:" << std::endl;
@@ -1226,7 +1291,7 @@ void orderBandK(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, pt
         std::cout << std::endl;
     }
 #endif
-    cprm = (ptiIndex *) malloc(sizeof(ptiIndex) * (ndims[dim]+1));
+    //cprm = (ptiIndex *) malloc(sizeof(ptiIndex) * (ndims[dim]+1));
     invcprm = (ptiIndex *) malloc(sizeof(ptiIndex) * (ndims[dim]+1));
     saveOrgIds = (ptiIndex *) malloc(sizeof(ptiIndex) * (ndims[dim]+1));
     /*    checkRepeatIndex(mtxNrows, rowPtrs, colIds, ndims[dim] );*/
@@ -1240,10 +1305,91 @@ void orderBandK(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, pt
     const char * kernelType = "SpMV";
     const char * corseningType = "HAND";
     const char * orderingType = "";
+    int k = 2;
     std::vector<int> supRowSizes = {1};
-    CSRk_Graph A_mat(mtxNrows, ndims[dim], nnz, rowPtrs, colIds, values.data, kernelType,
-                     orderingType, corseningType, false, 2, supRowSizes.data());
+    // TODO coords is actually just a set of [[x,y,z],[x,y,z]...]
+    //TODO
+    // input is COO
+    // at this point it has been converted to CSR (row pointers and col ids)
+    // so basically all we want to do is just modify the part for getting the permutation out
+    //TODO probably don't actually want real values to be here?
+
+    //TODO make sure don't need to worry about off by 1 for colIDs?
+    //TODO can we assume colIds are sorted amoung themselves already? The sort function doesn't actually sort
+    // current dim, just with respect to everything else.
+
+    //Do we have to invert the logic for row and col ids in order to properly get cols (as rows?)
+    auto row_size = mtxNrows+2;
+    std::vector<ptiValue> values(nnz + 1, 1.0f);
+    //(we don't want to access first thing, so we don't touch row_ptrs)
+
+    //TODO if need to move input to be zero based.
+    std::vector<std::uint32_t> old_row_ptrs(row_size);
+    std::vector<std::uint32_t> old_col_ids(nnz);
+    for(std::size_t idx = 1; idx < old_row_ptrs.size(); ++idx){
+        old_row_ptrs[idx] = rowPtrs[idx] - 1;
+    }
+    old_row_ptrs[0] = 0;
+    for(std::size_t idx = 0; idx < old_col_ids.size(); ++idx){
+        old_col_ids[idx] = colIds[idx+1] - 1;
+    }
+
+//    std::vector<std::uint32_t> old_row_ptrs(row_size);
+//    std::vector<std::uint32_t> old_col_ids(nnz + 1);
+//    for(std::size_t i = 0; i < old_row_ptrs.size(); ++i){
+//        old_row_ptrs[i] = rowPtrs[i];
+//    }
+//    for(std::size_t i = 0; i < old_col_ids.size(); ++i){
+//        old_col_ids[i] = colIds[i];
+//    }
+
+//    CSRk_Graph A_mat(mtxNrows + 1, ndims[dim], nnz, old_row_ptrs.data(), old_col_ids.data(), values.data(), kernelType,
+//                     orderingType, corseningType, false, k, supRowSizes.data());
+
+    CSRk_Graph A_mat(ndims[dim], ndims[dim], nnz, old_row_ptrs.data(), old_col_ids.data(), values.data(), kernelType,
+                     orderingType, corseningType, false, k, supRowSizes.data());
+
     A_mat.putInCSRkFormat();
+
+
+
+//    //All cols should be in the order they now should appear in, we just need to extract the entire dim's permutation from it.
+//    std::vector<std::uint32_t> cprm = find_column_permutation(std::span(rowPtrs + 1, row_size - 1), std::span(colIds, nnz + 1),
+//                            std::span(A_mat.get_r_vec(), row_size - 1), std::span(A_mat.get_c_vec(), nnz + 1),
+//                            std::span(A_mat.getPermutation(), row_size), ndims[dim]+1);
+
+//All cols should be in the order they now should appear in, we just need to extract the entire dim's permutation from it.
+//TODO not needed right now, Only symmetric square matrices are valid ATM.
+//    std::vector<std::uint32_t> cprm = find_column_permutation(std::span(old_row_ptrs), std::span(old_col_ids),
+//                                                              std::span(A_mat.get_r_vec(), row_size - 1), std::span(A_mat.get_c_vec(), nnz),
+//                                                              std::span(A_mat.getPermutation(), row_size - 1), ndims[dim]);
+    auto row_perm_span = std::span(A_mat.getPermutation(), row_size - 1);
+    std::vector<std::uint32_t> cprm(row_perm_span.begin(), row_perm_span.end());
+
+    //need to move it *back* into being 1 based.
+    for(auto& value : cprm){
+        value += 1;
+    }
+    //suppposed to be 1 larger.
+    cprm.insert(cprm.begin(), 0);
+
+
+
+
+
+  //  std::span<unsigned int> original_permutation(A_mat.getPermutation(), row_size);
+
+    //we need to take rows, organize columns?
+    // TODO actually should be able to just take cols from A_mat, compress latterally, to figure out order?
+    // it *looks* like LexOrderThem is just keeping relative order of empty cols  inbetween, so we should do this as well.
+
+    //TODO get original permutation (should be inside of A_Mat)
+    //TODO that permutation becomes what we change for org ids etc...?
+    //TODO permBigG is hypothetically ether row or column permutation?
+    //TODO totally row permutation because allocates in number of rows.
+
+    // take rows and re-permute with columns?
+
     //Need to take where items came from, set new locations to current ones (shown in loop in orderit I think)
     //ords is the origional order first, then subsequent orderings later on.
 
@@ -1274,7 +1420,7 @@ void orderBandK(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, pt
     free(mode_order);
     free(saveOrgIds);
     free(invcprm);
-    free(cprm);
+//    free(cprm);
     free(colIds);
     free(rowPtrs);
 }
@@ -1330,7 +1476,7 @@ void orderitBandK(ptiSparseTensor * tsr, ptiIndex ** newIndices, int const renum
         {
             printf("[Lexi-order] Optimizing the numbering for its %u\n", its+1);
             for (m = 0; m < nm; m++)
-                orderBandk(coords, nnz, nm, tsr->ndims, m, orgIds, tsr->values);
+                orderBandK(coords, nnz, nm, tsr->ndims, m, orgIds);
 
             // fprintf(stdout, "\niter %u:\n", its);
             // for(ptiIndex m = 0; m < tsr->nmodes; ++m) {
@@ -1364,4 +1510,225 @@ void orderitBandK(ptiSparseTensor * tsr, ptiIndex ** newIndices, int const renum
         free(coords[z]);
     free(coords);
 
+}
+
+
+struct NewIndicesView{
+    ptiIndex ** newIndices = nullptr;
+};
+
+
+
+
+
+void orderDimTranslated(std::span<std::vector<ptiIndex>> coords, ptiNnzIndex const nnz, ptiIndex const nm, std::span<ptiIndex> mode_sizes, ptiIndex const dim, std::span<std::vector<ptiIndex>> orgIds);
+void orderitTranslated(ptiSparseTensor * tsr, ptiIndex ** newIndices, int const renumber, ptiIndex const iterations)
+{
+    /*
+     newIndices is of size [nmodes][ndims[modes]] and assumed to be allocted.
+     It will be overwritten. No need to initialize.
+
+     We will need to reshuffle nonzeros. In order to not to touch tsr, we copy the indices of nonzeros
+     to a local variable coords. This is sort of transposed wrt tsr: its size is nnz * n, instead of n * nnz used in tsr.
+     */
+
+    ptiIndex mode_count = tsr->nmodes;
+    ptiNnzIndex nonzero_count = tsr->nnz;
+
+    std::span<ptiIndex> dim_sizes(tsr->ndims, mode_count);
+
+    std::vector<std::vector<ptiIndex>> coords(nonzero_count);
+//    ptiIndex ** coords;
+
+    /* copy the indices */
+    ptiTimer copy_coord_timer;
+    ptiNewTimer(&copy_coord_timer, 0);
+    ptiStartTimer(copy_coord_timer);
+
+    for (ptiNnzIndex nz_idx = 0; nz_idx < nonzero_count; nz_idx++)
+    {
+        coords[nz_idx].resize(mode_count);
+        for (ptiIndex mode = 0; mode < mode_count; mode++) {
+            coords[nz_idx][mode] = tsr->inds[mode].data[nz_idx];
+        }
+    }
+
+    ptiStopTimer(copy_coord_timer);
+    ptiPrintElapsedTime(copy_coord_timer, "Copy coordinate time");
+    ptiFreeTimer(copy_coord_timer);
+
+    /* checkEmptySlices(coords, nnz, nm, tsr->ndims); */
+
+    if (renumber == 1) {    /* Lexi-order renumbering */
+
+        std::vector<std::vector<ptiIndex>> original_idxs(mode_count);
+        for (ptiIndex mode = 0; mode < mode_count; mode++) {
+            original_idxs[mode].resize(dim_sizes[mode]);
+            for (ptiIndex dim_idx = 0; dim_idx < dim_sizes[mode]; dim_idx++) {
+                original_idxs[mode][dim_idx] = dim_idx;
+            }
+        }
+
+        // FILE * debug_fp = fopen("old.txt", "w");
+        // fprintf(stdout, "orgIds:\n");
+        for (ptiIndex iteration = 0; iteration < iterations; iteration++){
+            printf("[Lexi-order] Optimizing the numbering for its %u\n", iteration+1);
+            for (ptiIndex mode = 0; mode < mode_count; mode++) {
+                orderDimTranslated(coords, nonzero_count, mode_count, dim_sizes, mode, original_idxs);
+            }
+
+            // fprintf(stdout, "\niter %u:\n", its);
+            // for(ptiIndex m = 0; m < tsr->nmodes; ++m) {
+            //     ptiDumpIndexArray(orgIds[m], tsr->ndims[m], stdout);
+            // }
+        }
+        // fclose(debug_fp);
+
+        /* compute newIndices from orgIds. Reverse perm */
+        for (ptiIndex mode = 0; mode < mode_count; mode++) {
+            for (ptiIndex dim_idx = 0; dim_idx < dim_sizes[mode]; dim_idx++) {
+                newIndices[mode][original_idxs[mode][dim_idx]] = dim_idx;
+            }
+        }
+
+    } else if (renumber == 2 ) {    /* BFS-like renumbering */
+        /*
+         REMARK (10 May 2018): this is the old bfs-like kind of thing. I hoped it would reduce the number of iterations,
+         but on a few cases it did not help much. Just leaving it in case we want to use it.
+         */
+        printf("[BFS-like]\n");
+
+        //orderforHiCOObfsLike(mode_count, nonzero_count, tsr->ndims, coords, newIndices);
+    }
+
+    // printf("set the new indices\n");
+/*    checkNewIndices(newIndices, nm, tsr->ndims);*/
+
+}
+
+
+/**************************************************************/
+#define myAbs(x) (((x) < 0) ? -(x) : (x))
+
+// SB:
+// coords is the SOA x,y,z... list of COO indexes
+// nnz = number of non zeros
+// nm = number of modes
+// ndims = the length of each mode/dimension (length of x, y, and z)
+// dim = the given dimension processing.
+// orgIds = the origional order of all the IDs (same size as coords)
+void orderDimTranslated(std::span<std::vector<ptiIndex>> coords, ptiNnzIndex const nonzero_count, ptiIndex const mode_count,
+                        std::span<ptiIndex> mode_sizes, ptiIndex const mode_selected, std::span<std::vector<ptiIndex>> orgIds){
+
+    std::vector<ptiIndex> mode_order((mode_count - 1));
+    ptiIndex i = 0;
+    for(ptiIndex mode = 0; mode < mode_count; ++mode) {
+        if (mode != mode_selected) {
+            mode_order[i] = mode;
+            ++ i;
+        }
+    }
+
+    double t1, t0;
+    t0 = u_seconds();
+    // mySort(coords,  nnz-1, nm, ndims, dim);
+    //SB:
+    // sorts coords according to all dims except dim, where items are refered with newIndices
+    // an iterative quicksort
+    // appears to only be relevant to creating CSR version
+    //TODO deal with this?
+  //  mySortFast(coords,  nonzero_count-1, mode_count, mode_sizes, mode_selected, mode_order);
+    t1 = u_seconds()-t0;
+    printf("dim %u, sort time %.2f\n", mode_selected, t1);
+    // printCoords(coords, nnz, nm);
+    /* we matricize this (others x thisDim), whose columns will be renumbered */
+
+    /* on the matrix all arrays are from 1, and all indices are from 1. */
+
+    std::vector<ptiNnzIndex> rowPtrs(nonzero_count+2); /*large space*/
+    std::vector<ptiIndex> colIds ((nonzero_count+2)); /*large space*/
+
+    rowPtrs[0] = 0; /* we should not access this, that is why. */
+    rowPtrs[1] = 1;
+
+    colIds[1] = coords[0][mode_selected] + 1;
+    ptiNnzIndex atRowPlus1 = 2;
+    ptiNnzIndex mtrxNnz = 2;/* start filling from the second element */
+
+    t0 = u_seconds();
+    //SB:
+    //generates row pointers for CSR and increments col ids.
+    //lexigraphically compares the indexes for the coordinates first.
+    for (ptiNnzIndex nz_idx = 1; nz_idx < nonzero_count; nz_idx++)
+    {
+        // if(isLessThanOrEqualTo( coords[z], coords[z-1], nm, ndims, dim) != 0)
+        if(isLessThanOrEqualToFast( coords[nz_idx].data(), coords[nz_idx-1].data(), mode_count, mode_order.data()) != 0) {
+            rowPtrs[atRowPlus1++] = mtrxNnz; /* close the previous row and start a new one. */
+        }
+        colIds[mtrxNnz++] = coords[nz_idx][mode_selected]+1;
+    }
+    rowPtrs[atRowPlus1] = mtrxNnz;
+    ptiNnzIndex mtxNrows = atRowPlus1-1;
+    t1 =u_seconds()-t0;
+    printf("dim %u create time %.2f\n", mode_selected, t1);
+
+    rowPtrs.resize((mtxNrows+2));
+#ifdef TEST_CSR_ORDER_OUTPUT
+    {
+        std::cout << "row pointers:" << std::endl;
+        for (std::size_t idx = 0; idx < (mtxNrows + 2); ++idx) {
+            std::cout << rowPtrs[idx] << ", ";
+        }
+        std::cout << std::endl;
+        std::cout << "nnz " << nonzero_count << " mtxNrows " << mtxNrows << std::endl;
+//        if ((mtxNrows + 2) == (nnz + 2)) {
+//            std::cout << "nnz and mtxNrows match" << std::endl;
+//        }
+        std::cout << "colIds:" << std::endl;
+        for (std::size_t idx = 0; idx < (nonzero_count + 2); ++idx) {
+            std::cout << colIds[idx] << ", ";
+        }
+        std::cout << std::endl;
+    }
+#endif
+    std::vector<ptiIndex> cprm(mode_sizes[mode_selected] + 1);
+    std::vector<ptiIndex> invcprm(mode_sizes[mode_selected] + 1);
+    std::vector<ptiIndex> saveOrgIds(mode_sizes[mode_selected] + 1);
+    /*    checkRepeatIndex(mtxNrows, rowPtrs, colIds, ndims[dim] );*/
+
+    // printf("rowPtrs: \n");
+    // ptiDumpNnzIndexArray(rowPtrs, mtxNrows + 2, stdout);
+    // printf("colIds: \n");
+    // ptiDumpIndexArray(colIds, nnz + 2, stdout);
+
+    t0 = u_seconds();
+    //TODO is cprm, column permutation?
+    lexOrderThem(mtxNrows, mode_sizes[mode_selected], rowPtrs.data(), colIds.data(), cprm.data());
+    t1 =u_seconds()-t0;
+    printf("dim %u lexorder time %.2f\n", mode_selected, t1);
+    // printf("cprm: \n");
+    // ptiDumpIndexArray(cprm, ndims[dim] + 1, stdout);
+
+    /* update orgIds and modify coords */
+
+    for (ptiIndex mode_length_idx =0; mode_length_idx < mode_sizes[mode_selected]; mode_length_idx++){
+        //first figure out inverse mapping to column permutation.
+        invcprm[cprm[mode_length_idx+1]-1] = mode_length_idx;
+        //in order assignment for given mode "column"?
+        saveOrgIds[mode_length_idx] = orgIds[mode_selected][mode_length_idx];
+    }
+
+    for (ptiIndex mode_length_idx=0; mode_length_idx < mode_sizes[mode_selected]; mode_length_idx++){
+        //using column permutation keep track of orgIds (how to map back to the original ids?)
+        orgIds[mode_selected][mode_length_idx] = saveOrgIds[cprm[mode_length_idx+1]-1];
+    }
+
+    // printf("invcprm: \n");
+    // ptiDumpIndexArray(invcprm, ndims[dim] + 1, stdout);
+
+    /*rename the dim component of nonzeros*/
+    for (ptiNnzIndex nz_idx = 0; nz_idx < nonzero_count; nz_idx++) {
+        //update coords with inverse column permutation.
+        coords[nz_idx][mode_selected] = invcprm[coords[nz_idx][mode_selected]];
+    }
 }

@@ -341,7 +341,7 @@ private:
 
 public:
   CSRk_Graph();
-  CSRk_Graph(long nRows, long nCols, long nnz, unsigned int *rVec,
+  CSRk_Graph(long  nRows, long nCols, long nnz, unsigned int *rVec,
              unsigned int *cVec, float *value, string kernelCalled,
              string inOrderType, string inCoarsenType, bool isTuned, int inK,
              int *inSupRowSizes);
@@ -376,6 +376,9 @@ public:
   void incomplete_choloskey();
   void compute_b();
   void checkError();
+
+  const unsigned int * get_c_vec() const;
+  const unsigned int * get_r_vec() const;
 };
 
 class BAND_k {

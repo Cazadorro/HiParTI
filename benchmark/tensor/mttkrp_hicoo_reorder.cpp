@@ -194,7 +194,8 @@ int main(int argc, char ** argv) {
         ptiStartTimer(renumber_timer);
 
         if ( renumber == 1 || renumber == 2) { /* Set the Lexi-order or BFS-like renumbering */
-            orderit(&tsr, map_inds, renumber, niters_renum);
+//            orderit(&tsr, map_inds, renumber, niters_renum);
+            orderitBandK(&tsr, map_inds, renumber, niters_renum);
             // ptiIndexRenumber(&tsr, map_inds, renumber, niters_renum);
         }
         if ( renumber == 3) { /* Set randomly renumbering */
@@ -331,7 +332,7 @@ int main(int argc, char ** argv) {
     } else {
 
         mats_order[0] = mode;
-        for(ptiIndex i=1; i<nmodes; ++i)
+        for(ptiIndex i=1; i < nmodes; ++i)
             mats_order[i] = (mode+i) % nmodes;
         // printf("mats_order:\n");
         // ptiDumpIndexArray(mats_order, nmodes, stdout);

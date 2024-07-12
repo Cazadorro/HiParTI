@@ -281,11 +281,13 @@ if(BUILD_SHARED)
 #    set_target_properties(HiParTI PROPERTIES C_STANDARD 99)
     target_link_libraries(HiParTI PUBLIC absl::numeric unofficial::getopt-win32::getopt)
     target_link_libraries(HiParTI PUBLIC spmv-csrk)
+#set_property(TARGET HiParTI_s PROPERTY  MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 if(BUILD_STATIC)
 #    set_target_properties(HiParTI_s PROPERTIES C_STANDARD 99)
     target_link_libraries(HiParTI_s PUBLIC absl::numeric unofficial::getopt-win32::getopt)
     target_link_libraries(HiParTI_s PUBLIC spmv-csrk)
+    set_property(TARGET HiParTI_s PROPERTY  MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
 

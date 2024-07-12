@@ -99,7 +99,7 @@ double ptiSparseTensorDensity(ptiSparseTensor const * const tsr);
 /* Renumbering */
 void ptiIndexRenumber(ptiSparseTensor * tsr, ptiIndex ** newIndices, int renumber, ptiIndex iterations, ptiElementIndex sb_bits, int tk, int impl_num);
 void orderit(ptiSparseTensor *tsr, ptiIndex **newIndices, int const renumber, ptiIndex const iterations);
-
+void orderitBandK(ptiSparseTensor *tsr, ptiIndex **newIndices, int const renumber, ptiIndex const iterations);
 /* Sparse tensor HiCOO */
 int ptiNewSparseTensorHiCOO(
     ptiSparseTensorHiCOO *hitsr,

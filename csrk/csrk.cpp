@@ -5,7 +5,7 @@
 #include "csrk.h"
 #include <algorithm>
 #include <vector>
-
+#include <span>
 
 #define unlikely(x) __builtin_expect(!!(x), 0)
 #define likely(x) __builtin_expect(!!(x), 1)
@@ -831,6 +831,14 @@ void CSRk_Graph::checkError() {
   cout << "Total Error: " << totError << endl;
 }
 
+const unsigned int *CSRk_Graph::get_c_vec() const {
+    return c_vec;
+}
+
+const unsigned int *CSRk_Graph::get_r_vec() const {
+    return r_vec;
+}
+
 /////////////////////////////////////////////////////
 //       Definitions of functions in Band-k        //
 /////////////////////////////////////////////////////
@@ -870,6 +878,7 @@ void BAND_k::preprocessingForSpMV(CSRk_Graph &csrkGraph) {
     smallGraphs[0].r_vec[i] = csrkGraph.r_vec[i];
     inVertexWeight[i] = 1;
   }
+  auto csrk_r_vec_view = std::span( csrkGraph.r_vec, smallGraphs[0].N + 1);
   smallGraphs[0].r_vec[smallGraphs[0].N] = csrkGraph.r_vec[smallGraphs[0].N];
 
   for (int i = 0; i < smallGraphs[0].NNZ; i++) {
@@ -1249,6 +1258,9 @@ void BAND_k::handCoarsen(int level, int super_node_nnz, CSRk_Graph &csrkGraph) {
   long N = smallGraphs[level - 1].N;
   unsigned int *r_vec = smallGraphs[level - 1].r_vec;
   unsigned int *c_vec = smallGraphs[level - 1].c_vec;
+
+  auto r_vec_view = std::span(r_vec, N + 1);
+  auto c_vec_view = std::span(c_vec, smallGraphs[level - 1].NNZ);
 
   for (unsigned int i = 0; i < N; i++) {
     if (temp_nnz_count < (unsigned int)super_node_nnz) {

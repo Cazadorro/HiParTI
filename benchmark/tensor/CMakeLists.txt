@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)  # CMake 3.2 supports CUDA 7.0
+cmake_minimum_required(VERSION 3.25)  # CMake 3.2 supports CUDA 7.0
 project(HiParTI)
 
 
@@ -25,6 +25,8 @@ foreach(BENCH_SRC IN LISTS BENCH_SRCS)
 #    set_target_properties("${BENCH_EXE}" PROPERTIES C_STANDARD 99)
     if(BUILD_STATIC)
         target_link_libraries("${BENCH_EXE}" PRIVATE HiParTI_s)
+        set_property(TARGET "${BENCH_EXE}" PROPERTY  MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
     else()
         target_link_libraries("${BENCH_EXE}" PRIVATE HiParTI)
     endif()
