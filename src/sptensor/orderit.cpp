@@ -1519,17 +1519,28 @@ ptiIndex calc_col(const ptiIndex *z1, ptiIndex dim){
 }
 
 
-//sorts smallest to largest.
-void sortFrames(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex mode_count, ptiIndex col_mode, ptiIndex row_mode){
+
+/**
+ * Given the coordinates of a tensor @p coords, sorts the coordinates (smallest to largets) in place and lexigraphically
+ * by all modes not the same as row_mode and column_mode, then by row_mode if equal, then by col_mode if the
+ * corresponding row_mode is equal.
+ * @param coords (coordinates of tensor in [x,y,z][x,y,z]... form
+ * @param nnz (number of non zeros)
+ * @param mode_count number of modes
+ * @param col_mode index of the mode that corresponds with the column
+ * @param row_mode index of the mode that corresponds with the row
+ */
+void sortCoordsBySlice(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex mode_count, ptiIndex col_mode, ptiIndex row_mode){
+    //Fill indexes from 0->nnz-1
     std::vector<std::size_t> indexes(nnz);
     std::iota(indexes.begin(), indexes.end(), 0);
     if(mode_count <= 2){
         return;
     }
 
-    //sort just the indices. +
+    //sort just the indices, using data from coords
     std::sort(indexes.begin(), indexes.end(), [&](auto lhs, auto rhs){
-
+        //first try to sort based on modes that are not row_mode or col_mode.
         for(std::size_t mode = 0; mode < mode_count; ++mode){
             if(mode != col_mode && mode != row_mode){
                 if(coords[lhs][mode] < coords[rhs][mode]){
@@ -1539,7 +1550,7 @@ void sortFrames(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex mode_count, 
                 }
             }
         }
-        //process rows *after* should maintain, effectively emulating [frames][rows][cols] ordering.
+        //process rows *after* should maintain, effectively emulating [slice][rows][cols] ordering.
         if(coords[lhs][row_mode] < coords[rhs][row_mode]){
             return true;
         } else if(coords[lhs][row_mode] > coords[rhs][row_mode]){
@@ -1567,89 +1578,107 @@ void sortFrames(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex mode_count, 
 }
 
 //coords = [xyz,xyz,xyz.... nnz = number of non zeros.  nm = number of modes. ndims = size of each mode. dim = chosen dim. orgIds = permutation change.
+
+/**
+ * Re-orders coords and sends the permutation through orgIds based on an arbitrary tensor split up into "slices" with a "chosen_mode"
+ * as the column mode.
+ * @param coords (coordinates of tensor in [x,y,z][x,y,z]... form
+ * @param nnz number of non zeros
+ * @param mode_count number of modes
+ * @param mode_sizes the array of sizes of each mode (for example, a 4x5x6 tensor would have mode_sizes = [4,5,6])
+ * @param chosen_mode the chosen column mode
+ * @param orgIds the original *and* returned permutation for each dimension.
+ */
 void orderBandK2(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const mode_count, ptiIndex * mode_sizes, ptiIndex const chosen_mode, ptiIndex ** orgIds) {
 
     assert((mode_count != 1, "Currently expects mode count to be more than 1"));
+
     ptiIndex col_mode = chosen_mode;
     ptiIndex row_mode = (chosen_mode + 1) % mode_count;
+
     ptiIndex col_size = mode_sizes[col_mode];
     ptiIndex row_size = mode_sizes[row_mode];
-    //other modes non col.
+
+    //other modes that aren't col_mode or row_mode.
     std::vector<ptiIndex> other_modes;
-    ptiIndex frame_count = 1;
+    ptiIndex slice_count = 1;
     other_modes.reserve(mode_count - 2);
     for (std::size_t mode = 0; mode < mode_count; ++mode) {
         if (mode != col_mode && mode != row_mode) {
             other_modes.push_back(mode);
-            frame_count *= mode_sizes[mode];
+            slice_count *= mode_sizes[mode];
         }
     }
-    sortFrames(coords, nnz, mode_count, col_mode, row_mode);
+    //sort the slices to we can index them in sequence.
+    sortCoordsBySlice(coords, nnz, mode_count, col_mode, row_mode);
 
 
-    auto extract_frame_indexes = [&](std::size_t i) {
-        std::vector<ptiIndex> frame_indexes;
-        frame_indexes.reserve(mode_count - 2);
+    //extract the vector of indices that represent the non row_mode/col_mode indices for the given index in coords
+    auto extract_slice_indexes_at = [&](std::size_t i) {
+        std::vector<ptiIndex> slice_indexes;
+        slice_indexes.reserve(mode_count - 2);
         for (std::size_t mode = 0; mode < mode_count; ++mode) {
             if (mode != col_mode && mode != row_mode) {
-                frame_indexes.push_back(coords[i][mode]);
+                slice_indexes.push_back(coords[i][mode]);
             }
         }
-        return frame_indexes;
+        return slice_indexes;
     };
-    //iterating through each sorted by frames, then rows, the cols.
-    std::vector<ptiIndex> previous_frame_indexes(mode_count - 2);
-    previous_frame_indexes = extract_frame_indexes(0);
+
+    //iterating through each sorted by slices, then rows, the cols.
+    std::vector<ptiIndex> previous_slice_indexes(mode_count - 2);
+    previous_slice_indexes = extract_slice_indexes_at(0);
     util::Transpose2DBitfield transpose_bitfield(std::max(row_size, col_size));
     std::size_t transpose_nnz = 0;
+    //fill in initial permutation
     std::vector<std::size_t> prev_column_permutation(mode_sizes[col_mode]);
-    std::vector<std::size_t> next_column_permutation(mode_sizes[col_mode]);
-    auto permute_frame = [&](){
-        //TODO other_mode_size is the "row" size, but will need column size as well and get max for square, for now assuming square.
-        std::vector<std::uint32_t> row_ptrs_full(transpose_bitfield.width() + 1);
-        std::vector<std::uint32_t> col_ids_full(transpose_nnz);
-        row_ptrs_full[0] = 0;
-        std::size_t row_idx = 0;
-        col_ids_full[0] = 0; //TODO not sure the point of this one shouldn't need to do anything.
-        std::size_t last_row = 0;
-
+    std::iota(prev_column_permutation.begin(), prev_column_permutation.end(), 0);
+    auto calculate_slice_column_bandk_permutation = [](
+            const util::Transpose2DBitfield& transpose_bitfield, std::size_t transpose_nnz, const std::vector<std::size_t>& prev_column_permutation){
+        //CSR data.
+        std::vector<std::uint32_t> row_ptrs(transpose_bitfield.width() + 1);
+        std::vector<std::uint32_t> col_ids(transpose_nnz);
+        row_ptrs[0] = 0;
+        col_ids[0] = 0;
         std::size_t accumulated_idx = 0;
+        //generate CSR slice tensor.
         for (std::size_t row = 0; row < transpose_bitfield.width(); ++row) {
             for (std::size_t col = 0; col < transpose_bitfield.width(); ++col) {
                 if (transpose_bitfield.get(row, col)) {
-                    col_ids_full[accumulated_idx] = col;
+                    col_ids[accumulated_idx] = col;
                     accumulated_idx += 1;
                 }
             }
-            row_ptrs_full[row + 1] = accumulated_idx;
+            row_ptrs[row + 1] = accumulated_idx;
         }
+        //Meta data for bandk
         const char *kernelType = "SpMV";
         const char *corseningType = "HAND";
         const char *orderingType = "";
         int k = 2;
         std::vector<int> supRowSizes = {1};
 
+        //dummy values for "values"
         std::vector<ptiValue> values(transpose_nnz + 1, 1.0f);
         CSRk_Graph A_mat(transpose_bitfield.width(), transpose_bitfield.width(), transpose_nnz,
-                         row_ptrs_full.data(), col_ids_full.data(), values.data(), kernelType,
+                         row_ptrs.data(), col_ids.data(), values.data(), kernelType,
                          orderingType, corseningType, false, k, supRowSizes.data());
 
         A_mat.putInCSRkFormat();
 
-        auto row_perm_span = std::span(A_mat.getPermutation(), row_size);
+        auto row_perm_span = std::span(A_mat.getPermutation(), transpose_bitfield.width());
 
+        std::vector<std::size_t> next_column_permutation(prev_column_permutation.size());
         //update previous permutations.
-        assert(row_perm_span.size() == next_column_permutation.size());
-        for (std::size_t perm_idx = 0; perm_idx < row_perm_span.size(); ++perm_idx) {
+        assert(row_perm_span.size() <= next_column_permutation.size());
+        for (std::size_t perm_idx = 0; perm_idx < prev_column_permutation.size(); ++perm_idx) {
             next_column_permutation[perm_idx] = prev_column_permutation[row_perm_span[perm_idx]];
         }
-        prev_column_permutation = next_column_permutation;
-        transpose_bitfield.clear();
-        transpose_nnz = 0;
+        return next_column_permutation;
     };
     for (std::size_t i = 0; i < nnz; ++i) {
-        auto current_frame_indexes = extract_frame_indexes(i);
-        if (current_frame_indexes == previous_frame_indexes) {
+        auto current_slice_indexes = extract_slice_indexes_at(i);
+        if (current_slice_indexes == previous_slice_indexes) {
             auto curr_row = coords[i][row_mode];
             auto curr_col = coords[i][col_mode];
             auto already_set = transpose_bitfield.test_and_set(curr_row, curr_col);
@@ -1657,13 +1686,16 @@ void orderBandK2(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const mode_
                 transpose_nnz += 1;
             }
         } else {
-           permute_frame();
-           previous_frame_indexes = current_frame_indexes;
+            prev_column_permutation = calculate_slice_column_bandk_permutation(transpose_bitfield, transpose_nnz, prev_column_permutation);
+            transpose_bitfield.clear();
+            transpose_nnz = 0;
+            previous_slice_indexes = current_slice_indexes;
         }
     }
     //won't trigger last iteration with last frame, as difference won't be found.
-     permute_frame();
+    prev_column_permutation = calculate_slice_column_bandk_permutation(transpose_bitfield, transpose_nnz, prev_column_permutation);
 
+    //Creating data from previous "order" function inside orderit.
     std::vector<std::uint32_t> cprm(prev_column_permutation.begin(), prev_column_permutation.end());
 
     //need to move it *back* into being 1 based.
