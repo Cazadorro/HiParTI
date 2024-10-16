@@ -194,8 +194,8 @@ int main(int argc, char ** argv) {
         ptiStartTimer(renumber_timer);
 
         if ( renumber == 1 || renumber == 2) { /* Set the Lexi-order or BFS-like renumbering */
-            orderit(&tsr, map_inds, renumber, niters_renum);
-           // orderitBandK(&tsr, map_inds, renumber, niters_renum);
+//            orderit(&tsr, map_inds, renumber, niters_renum);
+            orderitBandK(&tsr, map_inds, renumber, niters_renum);
             // ptiIndexRenumber(&tsr, map_inds, renumber, niters_renum);
         }
         if ( renumber == 3) { /* Set randomly renumbering */

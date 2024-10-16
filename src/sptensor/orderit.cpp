@@ -1370,47 +1370,47 @@ static void orderforHiCOOaDimTranslated(basicHypergraph *hg, ptiIndex *newIndice
 }
 
 
-void orderforHiCOObfsLikeTranslated(ptiIndex const mode_count, ptiNnzIndex const nnz, std::span<const ptiIndex> mode_sizes, ptiIndex ** coords, ptiIndex ** newIndices){
-    /*PRE: newIndices is allocated
-
-     POST:
-     newIndices[0][0...n_0-1] gives the new ids for dim 0
-     newIndices[1][0...n_1-1] gives the new ids for dim 1
-     ...
-     newIndices[d-1][0...n_{d-1}-1] gives the new ids for dim d-1
-
-     This implements a simple idea close to BFS/Cuthill-McKee/Maximum cardinality search.
-     */
-    ptiIndex d, i;
-    std::vector<ptiIndex> mode_size_prefix_sum(mode_count, 0);
-
-    for (std::size_t idx  = 1; idx < mode_count; idx++){
-        mode_size_prefix_sum[idx] = mode_sizes[idx-1] + mode_size_prefix_sum[idx-1];
-    }
-
-
-    auto hg = BasicHypergraph::from_coo(mode_count, nnz, mode_sizes, coords);
-
-    std::vector<ptiIndex> new_indices_hyper_graph(hg.vertex_count());
-
-    //incrementing 0 -> ... max.
-    std::iota(new_indices_hyper_graph.begin(), new_indices_hyper_graph.end(), 0);
-
-
-    for (d = 0; d < nm; d++) /*order d*/
-        //believe we prefix sum in order to index the appropriate set of vertices?
-        orderforHiCOOaDim(&hg, newIndicesHg, dimsPrefixSum[d], dimsPrefixSum[d] + ndims[d]-1);
-
-    /*copy from newIndices to newIndicesOut*/
-    for (d = 0; d < nm; d++)
-        for (i = 0; i < ndims[d]; i++)
-            newIndices[d][i] = newIndicesHg[dimsPrefixSum[d] + i] - dimsPrefixSum[d];
-
-    free(newIndicesHg);
-    freeHypergraphData(&hg);
-    free(dimsPrefixSum);
-
-}
+//void orderforHiCOObfsLikeTranslated(ptiIndex const mode_count, ptiNnzIndex const nnz, std::span<const ptiIndex> mode_sizes, ptiIndex ** coords, ptiIndex ** newIndices){
+//    /*PRE: newIndices is allocated
+//
+//     POST:
+//     newIndices[0][0...n_0-1] gives the new ids for dim 0
+//     newIndices[1][0...n_1-1] gives the new ids for dim 1
+//     ...
+//     newIndices[d-1][0...n_{d-1}-1] gives the new ids for dim d-1
+//
+//     This implements a simple idea close to BFS/Cuthill-McKee/Maximum cardinality search.
+//     */
+//    ptiIndex d, i;
+//    std::vector<ptiIndex> mode_size_prefix_sum(mode_count, 0);
+//
+//    for (std::size_t idx  = 1; idx < mode_count; idx++){
+//        mode_size_prefix_sum[idx] = mode_sizes[idx-1] + mode_size_prefix_sum[idx-1];
+//    }
+//
+//
+//    auto hg = BasicHypergraph::from_coo(mode_count, nnz, mode_sizes, coords);
+//
+//    std::vector<ptiIndex> new_indices_hyper_graph(hg.vertex_count());
+//
+//    //incrementing 0 -> ... max.
+//    std::iota(new_indices_hyper_graph.begin(), new_indices_hyper_graph.end(), 0);
+//
+//
+//    for (d = 0; d < nm; d++) /*order d*/
+//        //believe we prefix sum in order to index the appropriate set of vertices?
+//        orderforHiCOOaDim(&hg, newIndicesHg, dimsPrefixSum[d], dimsPrefixSum[d] + ndims[d]-1);
+//
+//    /*copy from newIndices to newIndicesOut*/
+//    for (d = 0; d < nm; d++)
+//        for (i = 0; i < ndims[d]; i++)
+//            newIndices[d][i] = newIndicesHg[dimsPrefixSum[d] + i] - dimsPrefixSum[d];
+//
+//    free(newIndicesHg);
+//    freeHypergraphData(&hg);
+//    free(dimsPrefixSum);
+//
+//}
 
 /**************************************************************/
 void orderforHiCOObfsLike(ptiIndex const nm, ptiNnzIndex const nnz, ptiIndex * ndims, ptiIndex ** coords, ptiIndex ** newIndices)
@@ -1516,6 +1516,178 @@ ptiIndex calc_row(const ptiIndex *z1, ptiIndex nm, const ptiIndex * ndims, const
 ptiIndex calc_col(const ptiIndex *z1, ptiIndex dim){
     /*is z1 less than or equal to z2 for all indices except dim?*/
     return z1[dim];
+}
+
+
+//sorts smallest to largest.
+void sortFrames(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex mode_count, ptiIndex col_mode, ptiIndex row_mode){
+    std::vector<std::size_t> indexes(nnz);
+    std::iota(indexes.begin(), indexes.end(), 0);
+    if(mode_count <= 2){
+        return;
+    }
+
+    //sort just the indices. +
+    std::sort(indexes.begin(), indexes.end(), [&](auto lhs, auto rhs){
+
+        for(std::size_t mode = 0; mode < mode_count; ++mode){
+            if(mode != col_mode && mode != row_mode){
+                if(coords[lhs][mode] < coords[rhs][mode]){
+                    return true;
+                } else if(coords[lhs][mode] > coords[rhs][mode]){
+                    return false;
+                }
+            }
+        }
+        //process rows *after* should maintain, effectively emulating [frames][rows][cols] ordering.
+        if(coords[lhs][row_mode] < coords[rhs][row_mode]){
+            return true;
+        } else if(coords[lhs][row_mode] > coords[rhs][row_mode]){
+            return false;
+        }
+        //finally sort by cols.
+        if(coords[lhs][col_mode] < coords[rhs][col_mode]){
+            return true;
+        } else if(coords[lhs][col_mode] > coords[rhs][col_mode]){
+            return false;
+        }
+        return false;
+    });
+
+    //copy result back into coords.
+    std::vector<ptiIndex> copy(nnz);
+    for(std::size_t mode = 0; mode < mode_count; ++mode){
+        for(std::size_t i = 0; i < nnz; ++i){
+            copy[i] = coords[indexes[i]][mode];
+        }
+        for(std::size_t i = 0; i < nnz; ++i){
+            coords[i][mode] = copy[i];
+        }
+    }
+}
+
+//coords = [xyz,xyz,xyz.... nnz = number of non zeros.  nm = number of modes. ndims = size of each mode. dim = chosen dim. orgIds = permutation change.
+void orderBandK2(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const mode_count, ptiIndex * mode_sizes, ptiIndex const chosen_mode, ptiIndex ** orgIds) {
+
+    assert((mode_count != 1, "Currently expects mode count to be more than 1"));
+    ptiIndex col_mode = chosen_mode;
+    ptiIndex row_mode = (chosen_mode + 1) % mode_count;
+    ptiIndex col_size = mode_sizes[col_mode];
+    ptiIndex row_size = mode_sizes[row_mode];
+    //other modes non col.
+    std::vector<ptiIndex> other_modes;
+    ptiIndex frame_count = 1;
+    other_modes.reserve(mode_count - 2);
+    for (std::size_t mode = 0; mode < mode_count; ++mode) {
+        if (mode != col_mode && mode != row_mode) {
+            other_modes.push_back(mode);
+            frame_count *= mode_sizes[mode];
+        }
+    }
+    sortFrames(coords, nnz, mode_count, col_mode, row_mode);
+
+
+    auto extract_frame_indexes = [&](std::size_t i) {
+        std::vector<ptiIndex> frame_indexes;
+        frame_indexes.reserve(mode_count - 2);
+        for (std::size_t mode = 0; mode < mode_count; ++mode) {
+            if (mode != col_mode && mode != row_mode) {
+                frame_indexes.push_back(coords[i][mode]);
+            }
+        }
+        return frame_indexes;
+    };
+    //iterating through each sorted by frames, then rows, the cols.
+    std::vector<ptiIndex> previous_frame_indexes(mode_count - 2);
+    previous_frame_indexes = extract_frame_indexes(0);
+    util::Transpose2DBitfield transpose_bitfield(std::max(row_size, col_size));
+    std::size_t transpose_nnz = 0;
+    std::vector<std::size_t> prev_column_permutation(mode_sizes[col_mode]);
+    std::vector<std::size_t> next_column_permutation(mode_sizes[col_mode]);
+    auto permute_frame = [&](){
+        //TODO other_mode_size is the "row" size, but will need column size as well and get max for square, for now assuming square.
+        std::vector<std::uint32_t> row_ptrs_full(transpose_bitfield.width() + 1);
+        std::vector<std::uint32_t> col_ids_full(transpose_nnz);
+        row_ptrs_full[0] = 0;
+        std::size_t row_idx = 0;
+        col_ids_full[0] = 0; //TODO not sure the point of this one shouldn't need to do anything.
+        std::size_t last_row = 0;
+
+        std::size_t accumulated_idx = 0;
+        for (std::size_t row = 0; row < transpose_bitfield.width(); ++row) {
+            for (std::size_t col = 0; col < transpose_bitfield.width(); ++col) {
+                if (transpose_bitfield.get(row, col)) {
+                    col_ids_full[accumulated_idx] = col;
+                    accumulated_idx += 1;
+                }
+            }
+            row_ptrs_full[row + 1] = accumulated_idx;
+        }
+        const char *kernelType = "SpMV";
+        const char *corseningType = "HAND";
+        const char *orderingType = "";
+        int k = 2;
+        std::vector<int> supRowSizes = {1};
+
+        std::vector<ptiValue> values(transpose_nnz + 1, 1.0f);
+        CSRk_Graph A_mat(transpose_bitfield.width(), transpose_bitfield.width(), transpose_nnz,
+                         row_ptrs_full.data(), col_ids_full.data(), values.data(), kernelType,
+                         orderingType, corseningType, false, k, supRowSizes.data());
+
+        A_mat.putInCSRkFormat();
+
+        auto row_perm_span = std::span(A_mat.getPermutation(), row_size);
+
+        //update previous permutations.
+        assert(row_perm_span.size() == next_column_permutation.size());
+        for (std::size_t perm_idx = 0; perm_idx < row_perm_span.size(); ++perm_idx) {
+            next_column_permutation[perm_idx] = prev_column_permutation[row_perm_span[perm_idx]];
+        }
+        prev_column_permutation = next_column_permutation;
+        transpose_bitfield.clear();
+        transpose_nnz = 0;
+    };
+    for (std::size_t i = 0; i < nnz; ++i) {
+        auto current_frame_indexes = extract_frame_indexes(i);
+        if (current_frame_indexes == previous_frame_indexes) {
+            auto curr_row = coords[i][row_mode];
+            auto curr_col = coords[i][col_mode];
+            auto already_set = transpose_bitfield.test_and_set(curr_row, curr_col);
+            if (!already_set) {
+                transpose_nnz += 1;
+            }
+        } else {
+           permute_frame();
+           previous_frame_indexes = current_frame_indexes;
+        }
+    }
+    //won't trigger last iteration with last frame, as difference won't be found.
+     permute_frame();
+
+    std::vector<std::uint32_t> cprm(prev_column_permutation.begin(), prev_column_permutation.end());
+
+    //need to move it *back* into being 1 based.
+    for(auto& value : cprm){
+        value += 1;
+    }
+    //suppposed to be 1 larger.
+    cprm.insert(cprm.begin(), 0);
+
+    auto invcprm = std::vector<ptiIndex>(mode_sizes[chosen_mode]+1);
+    auto saveOrgIds = std::vector<ptiIndex>(mode_sizes[chosen_mode]+1);
+
+    /* update orgIds and modify coords */
+    for (std::size_t c=0; c < mode_sizes[chosen_mode]; c++){
+        invcprm[cprm[c+1]-1] = c;
+        saveOrgIds[c] = orgIds[chosen_mode][c];
+    }
+    for (std::size_t c=0; c < mode_sizes[chosen_mode]; c++) {
+        orgIds[chosen_mode][c] = saveOrgIds[cprm[c + 1] - 1];
+    }
+    /*rename the dim component of nonzeros*/
+    for (std::size_t z = 0; z < nnz; z++) {
+        coords[z][chosen_mode] = invcprm[coords[z][chosen_mode]];
+    }
 }
 
 void orderBandK(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, ptiIndex * ndims, ptiIndex const dim, ptiIndex ** orgIds)
@@ -1806,6 +1978,7 @@ void orderBandK(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, pt
     free(rowPtrs);
 }
 
+
 void orderitBandK(ptiSparseTensor * tsr, ptiIndex ** newIndices, int const renumber, ptiIndex const iterations)
 {
     /*
@@ -1857,7 +2030,7 @@ void orderitBandK(ptiSparseTensor * tsr, ptiIndex ** newIndices, int const renum
         {
             printf("[Lexi-order] Optimizing the numbering for its %u\n", its+1);
             for (m = 0; m < nm; m++)
-                orderBandK(coords, nnz, nm, tsr->ndims, m, orgIds);
+                orderBandK2(coords, nnz, nm, tsr->ndims, m, orgIds);
 
             // fprintf(stdout, "\niter %u:\n", its);
             // for(ptiIndex m = 0; m < tsr->nmodes; ++m) {

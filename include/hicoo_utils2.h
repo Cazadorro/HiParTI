@@ -24,6 +24,8 @@ namespace util {
         bool get(std::size_t row, std::size_t col) const;
         [[nodiscard]]
         std::size_t width() const;
+
+        void clear();
     private:
         std::size_t m_width;
         czdr::bit_vector<std::uint32_t> m_bit_field;

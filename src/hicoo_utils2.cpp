@@ -23,4 +23,8 @@ namespace util {
         auto linear_index = row * m_width + col;
         return m_bit_field.get(linear_index);
     }
+
+    void Transpose2DBitfield::clear() {
+        m_bit_field.fill(false);
+    }
 }
