@@ -311,7 +311,7 @@ int main(int argc, char ** argv) {
             }
             double rest_nnz_portion = 1.0 - (double)sum_balanced_nnzk / hitsr.nnz;
             if (input_balanced == -1) {
-                if (rest_nnz_portion < rest_nnz_portion_th && max(num_kernel_dim, npars) > PAR_MIN_DEGREE * NUM_CORES ) {
+                if (rest_nnz_portion < rest_nnz_portion_th && ptiMax(num_kernel_dim, npars) > PAR_MIN_DEGREE * NUM_CORES ) {
                     balanced = 1;
                 } else {
                     balanced = 0;

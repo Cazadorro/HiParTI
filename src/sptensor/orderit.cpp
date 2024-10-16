@@ -10,6 +10,7 @@
 #include <iostream>
 #endif
 /** EXTRA INCLUDES**/
+#include "hicoo_utils2.h"
 #include <csrk.h>
 #include <ranges>
 #include <algorithm>
@@ -157,6 +158,15 @@ void orderit(ptiSparseTensor * tsr, ptiIndex ** newIndices, int const renumber, 
             coords[z][m] = tsr->inds[m].data[z];
         }
     }
+    for(z = 0; z < nnz; z++){
+        fmt::println(" coords[{}] {},{},{}",z,
+        coords[z][0],
+                coords[z][1],
+                coords[z][2]);
+    }
+
+
+
 
     ptiStopTimer(copy_coord_timer);
     ptiPrintElapsedTime(copy_coord_timer, "Copy coordinate time");
@@ -785,8 +795,18 @@ void orderDim(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, ptiI
     mtxNrows = atRowPlus1-1;
     t1 =u_seconds()-t0;
     printf("dim %u create time %.2f\n", dim, t1);
-    
+
+
+
     rowPtrs = reinterpret_cast<ptiNnzIndex*>(realloc(rowPtrs, (sizeof(ptiNnzIndex) * (mtxNrows+2))));
+
+    for(std::size_t idx = 0; idx < mtxNrows+2; ++idx){
+        fmt::println("row {} = {}", idx, rowPtrs[idx]);
+    }
+    for(std::size_t idx = 0; idx < nnz+2; ++idx){
+        fmt::println("col {} = {}", idx, colIds[idx]);
+    }
+
 #ifdef TEST_CSR_ORDER_OUTPUT
     {
         std::cout << "row pointers:" << std::endl;
@@ -817,6 +837,9 @@ void orderDim(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, ptiI
     
     t0 = u_seconds();
     lexOrderThem(mtxNrows, ndims[dim], rowPtrs, colIds, cprm);
+    for(std::size_t idx = 0; idx < ndims[dim]+1; ++idx){
+        std::cout << "cprm, " << idx << ", " << cprm[idx] << "\n";
+    }
     t1 =u_seconds()-t0;
     printf("dim %u lexorder time %.2f\n", dim, t1);
     // printf("cprm: \n");
@@ -834,10 +857,31 @@ void orderDim(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, ptiI
     // printf("invcprm: \n");
     // ptiDumpIndexArray(invcprm, ndims[dim] + 1, stdout);
 
+    fmt::println("ALL OLD");
+    for (z = 0; z < nnz; z++) {
+        fmt::println(" coords[{}][{}] = {},{},{}", z, dim,
+                     coords[z][0],
+                     coords[z][1],
+                     coords[z][2]);
+    }
+    fmt::println("OLD");
+    for (z = 0; z < nnz; z++) {
+        fmt::println(" coords[{}][{}] = {}", z, dim, coords[z][dim]);
+    }
+
     /*rename the dim component of nonzeros*/
-    for (z = 0; z < nnz; z++)
+    fmt::println("NEW");
+    for (z = 0; z < nnz; z++) {
         coords[z][dim] = invcprm[coords[z][dim]];
-    
+        fmt::println(" coords[{}][{}] = {}", z, dim, coords[z][dim]);
+    }
+    fmt::println("ALL NEW");
+    for (z = 0; z < nnz; z++) {
+        fmt::println(" coords[{}][{}] = {},{},{}", z, dim,
+                     coords[z][0],
+                     coords[z][1],
+                     coords[z][2]);
+    }
     free(mode_order);
     free(saveOrgIds);
     free(invcprm);
@@ -1114,6 +1158,259 @@ static void orderforHiCOOaDim(basicHypergraph *hg, ptiIndex *newIndicesHg, ptiIn
     free(heapIds);
 }
 
+struct BasicHypergraph{
+    /*starts of hedges containing vertices, and the ids of the hyper edges*/
+    std::vector<ptiNnzIndex> vertex_ptrs;
+    std::vector<ptiNnzIndex> vertex_hyper_edge_ids;
+
+    /*starts of vertices in the hedges, and the ids of the vertices*/
+    std::vector<ptiNnzIndex> hyper_edge_ptrs;
+    std::vector<ptiNnzIndex> hyper_edge_vertex_ids;
+
+
+    BasicHypergraph() = default;
+    /* vertex_count. This vertex_count = n_0 + n_1 + ... + n_{d-1} for a d-dimensional tensor where the ith dimension is of size n_i.*/
+    /* hyper_edge_count will be equal to the number of nonzeros in the tensor*/
+    /* starts of vertices in the hedges, and the ids of the vertices */
+    BasicHypergraph(ptiIndex vertex_count, ptiNnzIndex hyper_edge_count, ptiNnzIndex id_count) :
+            vertex_ptrs(vertex_count + 1),
+            vertex_hyper_edge_ids(id_count),
+            hyper_edge_ptrs(hyper_edge_count + 1),
+            hyper_edge_vertex_ids(id_count) {
+
+    }
+    [[nodiscard]]
+    ptiIndex vertex_count() const{
+        return vertex_ptrs.size() - 1;
+    }
+    [[nodiscard]]
+    ptiNnzIndex hyper_edge_count() const{
+        return hyper_edge_ptrs.size() - 1;
+    }
+
+    void set_vertex_list(){
+        /*PRE: We assume hg->hptrs and hg->hVids are set; hg->nvrts is set, and
+         hg->vptrs and hg->vHids are allocated appropriately.
+        */
+        std::fill(vertex_ptrs.begin(), vertex_ptrs.end(), ptiNnzIndex(0));
+
+        for (std::size_t hedge_idx = 0; hedge_idx < hyper_edge_count(); ++hedge_idx){
+            for (std::size_t i = hyper_edge_ptrs[hedge_idx]; i < hyper_edge_ptrs[hedge_idx+1]; i++){
+                auto v = hyper_edge_vertex_ids[i];
+                vertex_ptrs[v]++;
+            }
+        }
+        //Prefix summing...?
+        for (std::size_t vertex_idx=1; vertex_idx <= vertex_count(); vertex_idx++) {
+            vertex_ptrs[vertex_idx] += vertex_ptrs[vertex_idx - 1];
+        }
+
+        //goind reverse.
+        for (std::size_t hedge_idx = hyper_edge_count(); hedge_idx >= 1; hedge_idx--){
+            for (std::size_t i = hyper_edge_ptrs[hedge_idx-1]; i < hyper_edge_ptrs[hedge_idx]; i++){
+                auto v = hyper_edge_vertex_ids[i];
+                //reeeeally not sure why this being done, I guess it should still provide the mapping between vertex->hyper edge anyway?
+                vertex_hyper_edge_ids[--(vertex_ptrs[v])] = hedge_idx-1;
+            }
+        }
+    }
+
+    [[nodiscard]]
+    static BasicHypergraph from_coo(ptiIndex mode_count, ptiNnzIndex nnz, std::span<const ptiIndex> mode_sizes, ptiIndex **coords){
+
+        BasicHypergraph hg;
+
+        ptiIndex  totalSizes;
+        ptiNnzIndex h;
+        //TODO why nm + 1?
+        std::vector<ptiIndex> mode_size_prefix_sum(mode_count+1, 0);
+
+        ptiIndex i;
+
+        for (std::size_t idx  = 1; idx < mode_count; idx++){
+            mode_size_prefix_sum[idx] = mode_sizes[idx-1] + mode_size_prefix_sum[idx-1];
+        }
+        //the last value of the prefix sum, plus the last value of the mode_sizes ends up being the total
+        //sum of all mode sizes summed up.
+        ptiIndex total_mode_sum = mode_size_prefix_sum.back() + mode_sizes.back();
+
+        printf("allocating hyp %u %llu\n", mode_count, nnz);
+
+        hg = BasicHypergraph(total_mode_sum, nnz, nnz * mode_count);
+
+        ptiNnzIndex toAddress = 0;
+        for (h = 0; h < nnz; h++){
+            hg.hyper_edge_ptrs[h] = toAddress;
+            for (i = 0;  i < mode_count; i++)
+                hg.hyper_edge_vertex_ids[toAddress + i] = mode_size_prefix_sum[i] + coords[h][i];
+            toAddress += mode_count;
+        }
+        hg.hyper_edge_ptrs[hg.hyper_edge_count()] = toAddress;
+
+        hg.set_vertex_list();
+        return hg;
+    }
+};
+
+
+static void heapifyTranslated(ptiIndex *heapIds, ptiNnzIndex *key, ptiNnzIndex *vptrs, ptiIndex sz, ptiIndex i,  ptiIndex *inheap)
+{
+    ptiIndex largest, j, l,r, tmp;
+
+    largest = j = i;
+    while(j<=sz/2)
+    {
+        l = 2*j;
+        r = 2*j + 1;
+
+        if ( (key[heapIds[l]] > key[heapIds[j]] ) ||
+             (key[heapIds[l]] == key[heapIds[j]]  && SIZEV(heapIds[l]) < SIZEV(heapIds[j]) )
+                )
+            largest = l;
+        else
+            largest = j;
+
+        if (r<=sz && (key[heapIds[r]]>key[heapIds[largest]] ||
+                      (key[heapIds[r]]==key[heapIds[largest]] && SIZEV(heapIds[r]) < SIZEV(heapIds[largest])))
+                )
+            largest = r;
+
+        if (largest != j)
+        {
+            tmp = heapIds[largest];
+            heapIds[largest] = heapIds[j];
+            inheap[heapIds[j]] = largest;
+
+            heapIds[j] = tmp;
+            inheap[heapIds[j]] = j;
+            j = largest;
+        }
+        else
+            break;
+    }
+}
+
+static void heapBuildTranslated(ptiIndex *heapIds, ptiNnzIndex *key, ptiNnzIndex *vptrs, ptiIndex sz, ptiIndex *inheap)
+{
+    ptiIndex i;
+    for (i=sz/2; i>=1; i--)
+        heapify(heapIds, key, vptrs, sz, i, inheap);
+}
+static void orderforHiCOOaDimTranslated(basicHypergraph *hg, ptiIndex *newIndicesHg, ptiIndex indStart, ptiIndex indEnd)
+{
+    /* we re-order the vertices of the hypergraph with ids in the range [indStart, indEnd]*/
+
+    ptiIndex i, v, heapSz, *inHeap, *heapIds;
+    ptiNnzIndex j, jj, hedge, hedge2, k, w, ww;
+    ptiNnzIndex *vptrs = hg->vptrs, *vHids = hg->vHids, *hptrs = hg->hptrs, *hVids = hg->hVids;
+
+    ptiNnzIndex *keyvals, newKeyval;
+    int *markers, mark;
+
+    mark = 0;
+
+    heapIds = (ptiIndex*) malloc(sizeof(ptiIndex) * (indEnd-indStart + 2));
+    inHeap = (ptiIndex*) malloc(sizeof(ptiIndex) * hg->nvrt);/*this is large*/
+    keyvals = (ptiNnzIndex *) malloc(sizeof(ptiNnzIndex) * hg->nvrt);
+    markers = (int*) malloc(sizeof(int)* hg->nvrt);
+
+    heapSz = 0;
+
+    for (i = indStart; i<=indEnd; i++)
+    {
+        keyvals[i] = 0;
+        heapIds[++heapSz] = i;
+        inHeap[i] = heapSz;
+        markers[i] = -1;
+    }
+    heapBuildTranslated(heapIds, keyvals, vptrs, heapSz, inHeap);
+
+    for (i = indStart; i <= indEnd; i++)
+    {
+        v = heapExtractMax(heapIds, keyvals, vptrs, &heapSz, inHeap);
+        newIndicesHg[v] = i;
+        markers[v] = mark;
+        for (j = vptrs[v]; j < vptrs[v+1]; j++)
+        {
+            hedge = vHids[j];
+            //find all hyper edges connected to the vertex removed
+            for (k = hptrs[hedge]; k < hptrs[hedge+1]; k++)
+            {
+                //for every vertex connected to that hyperedge (breadth first search???)
+                w = hVids[k];
+                //if we haven't already removed that vertex.
+                if (markers[w] != mark)
+                {
+                    //mark the vertex
+                    markers[w] = mark;
+
+                    for(jj = vptrs[w]; jj < vptrs[w+1]; jj++)
+                    {
+                        //for every hyper edge connected to *that* vertex.
+                        hedge2 = vHids[jj];
+                        //find first vertex that's in current dimension (indstart indend?)
+                        ww = locateVertex(indStart, indEnd, hVids + hptrs[ hedge2], hptrs[hedge2+1]-hptrs[hedge2]);
+                        // if it's in heap
+                        if( inHeap[ww] )
+                        {
+                            //increase the key?
+                            newKeyval = keyvals[ww] + 1;
+                            heapIncreaseKey(heapIds, keyvals, vptrs, heapSz, ww, inHeap, newKeyval);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    free(markers);
+    free(keyvals);
+    free(inHeap);
+    free(heapIds);
+}
+
+
+void orderforHiCOObfsLikeTranslated(ptiIndex const mode_count, ptiNnzIndex const nnz, std::span<const ptiIndex> mode_sizes, ptiIndex ** coords, ptiIndex ** newIndices){
+    /*PRE: newIndices is allocated
+
+     POST:
+     newIndices[0][0...n_0-1] gives the new ids for dim 0
+     newIndices[1][0...n_1-1] gives the new ids for dim 1
+     ...
+     newIndices[d-1][0...n_{d-1}-1] gives the new ids for dim d-1
+
+     This implements a simple idea close to BFS/Cuthill-McKee/Maximum cardinality search.
+     */
+    ptiIndex d, i;
+    std::vector<ptiIndex> mode_size_prefix_sum(mode_count, 0);
+
+    for (std::size_t idx  = 1; idx < mode_count; idx++){
+        mode_size_prefix_sum[idx] = mode_sizes[idx-1] + mode_size_prefix_sum[idx-1];
+    }
+
+
+    auto hg = BasicHypergraph::from_coo(mode_count, nnz, mode_sizes, coords);
+
+    std::vector<ptiIndex> new_indices_hyper_graph(hg.vertex_count());
+
+    //incrementing 0 -> ... max.
+    std::iota(new_indices_hyper_graph.begin(), new_indices_hyper_graph.end(), 0);
+
+
+    for (d = 0; d < nm; d++) /*order d*/
+        //believe we prefix sum in order to index the appropriate set of vertices?
+        orderforHiCOOaDim(&hg, newIndicesHg, dimsPrefixSum[d], dimsPrefixSum[d] + ndims[d]-1);
+
+    /*copy from newIndices to newIndicesOut*/
+    for (d = 0; d < nm; d++)
+        for (i = 0; i < ndims[d]; i++)
+            newIndices[d][i] = newIndicesHg[dimsPrefixSum[d] + i] - dimsPrefixSum[d];
+
+    free(newIndicesHg);
+    freeHypergraphData(&hg);
+    free(dimsPrefixSum);
+
+}
 
 /**************************************************************/
 void orderforHiCOObfsLike(ptiIndex const nm, ptiNnzIndex const nnz, ptiIndex * ndims, ptiIndex ** coords, ptiIndex ** newIndices)
@@ -1202,6 +1499,25 @@ std::vector<std::uint32_t> find_column_permutation(
     return mapping;
 }
 
+//calculates the row given a set of indices for a value, tne number of modes, the size of each mode,
+// and the list of mod indexes that make up the given row.
+ptiIndex calc_row(const ptiIndex *z1, ptiIndex nm, const ptiIndex * ndims, const ptiIndex * mode_order){
+    /*is z1 less than or equal to z2 for all indices except dim?*/
+    ptiIndex row_index = 0;
+    std::size_t accumulated_dim = 1;
+    for (ptiIndex i = 0; i < nm - 1; i ++){
+        ptiIndex m = mode_order[i];
+        row_index += z1[m] * accumulated_dim;
+        accumulated_dim *= ndims[m];
+    }
+    return row_index;
+}
+
+ptiIndex calc_col(const ptiIndex *z1, ptiIndex dim){
+    /*is z1 less than or equal to z2 for all indices except dim?*/
+    return z1[dim];
+}
+
 void orderBandK(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, ptiIndex * ndims, ptiIndex const dim, ptiIndex ** orgIds)
 {
     using nnzIndexType = std::uint32_t;
@@ -1212,10 +1528,14 @@ void orderBandK(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, pt
 
 
     ptiIndex * mode_order = (ptiIndex *) malloc (sizeof(ptiIndex) * (nm - 1));
+    //needed to get the "row" size.
+    std::size_t other_mode_size = 1;
     ptiIndex i = 0;
     for(ptiIndex m = 0; m < nm; ++m) {
         if (m != dim) {
             mode_order[i] = m;
+            //accumulate the "row" size from all other dims except the dim that corresponds to column.
+            other_mode_size *= ndims[m];
             ++ i;
         }
     }
@@ -1251,9 +1571,62 @@ void orderBandK(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, pt
     mtrxNnz = 2;/* start filling from the second element */
 
     t0 = u_seconds();
+
+
+
+    //TODO other_mode_size is the "row" size, but will need column size as well and get max for square, for now assuming square.
+    util::Transpose2DBitfield transpose_bitfield(std::max(other_mode_size, static_cast<std::size_t>(ndims[dim])));
+    auto transpose_nnz = 0;
+    for(std::size_t idx = 0; idx < nnz; ++idx){
+        auto curr_row = calc_row(coords[idx], nm, ndims, mode_order);
+        auto curr_col = calc_col(coords[idx], dim);
+        auto already_set = transpose_bitfield.test_and_set(curr_row, curr_col);
+        if(!already_set){
+            transpose_nnz += 1;
+        }
+    }
+
     //SB:
     //generates row pointers for CSR and increments col ids.
     //lexigraphically compares the indexes for the coordinates first.
+
+    //row pointers always one more than number of rows to encompass last element.
+//    std::vector<std::uint32_t> row_ptrs_full(other_mode_size + 1);
+    std::vector<std::uint32_t> row_ptrs_full(transpose_bitfield.width() + 1);
+    std::vector<std::uint32_t>  col_ids_full(transpose_nnz);
+    row_ptrs_full[0] = 0;
+    std::size_t row_idx = 0;
+    col_ids_full[0] = coords[0][dim];
+    std::size_t last_row = 0;
+
+    std::size_t accumulated_idx = 0;
+    for(std::size_t row = 0; row < transpose_bitfield.width(); ++row){
+        for(std::size_t col = 0; col < transpose_bitfield.width(); ++col){
+            if(transpose_bitfield.get(row, col)){
+                col_ids_full[accumulated_idx] = col;
+                accumulated_idx+=1;
+            }
+        }
+        row_ptrs_full[row + 1] = accumulated_idx;
+    }
+
+//    for(std::size_t idx = 1; idx < nnz; ++idx){
+//        auto curr_row = calc_row(coords[idx], nm, ndims, mode_order);
+//        assert(curr_row >= last_row);
+//        if(curr_row > last_row){
+//            for(std::size_t row = last_row + 1; row <= curr_row; ++row){
+//                row_ptrs_full[row] = idx;
+//            }
+//            last_row = curr_row;
+//        }
+//        col_ids_full[idx] = coords[idx][dim];
+//    }
+//    if(last_row < (row_ptrs_full.size() - 1)){
+//        for(std::size_t row = last_row + 1; row < row_ptrs_full.size(); ++row){
+//            row_ptrs_full[row] = nnz;
+//        }
+//    }
+
     for (z = 1; z < nnz; z++)
     {
         // if(isLessThanOrEqualTo( coords[z], coords[z-1], nm, ndims, dim) != 0)
@@ -1320,16 +1693,17 @@ void orderBandK(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, pt
 
     //Do we have to invert the logic for row and col ids in order to properly get cols (as rows?)
     auto row_size = mtxNrows+2;
-    std::vector<ptiValue> values(nnz + 1, 1.0f);
+//    std::vector<ptiValue> values(nnz + 1, 1.0f);
+    std::vector<ptiValue> values(transpose_nnz + 1, 1.0f);
     //(we don't want to access first thing, so we don't touch row_ptrs)
 
     //TODO if need to move input to be zero based.
     std::vector<std::uint32_t> old_row_ptrs(row_size);
     std::vector<std::uint32_t> old_col_ids(nnz);
-    for(std::size_t idx = 1; idx < old_row_ptrs.size(); ++idx){
-        old_row_ptrs[idx] = rowPtrs[idx] - 1;
+    for(std::size_t idx = 0; idx < old_row_ptrs.size(); ++idx){
+        old_row_ptrs[idx] = rowPtrs[idx + 1] - 1;
     }
-    old_row_ptrs[0] = 0;
+//    old_row_ptrs[0] = 0;
     for(std::size_t idx = 0; idx < old_col_ids.size(); ++idx){
         old_col_ids[idx] = colIds[idx+1] - 1;
     }
@@ -1346,7 +1720,11 @@ void orderBandK(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, pt
 //    CSRk_Graph A_mat(mtxNrows + 1, ndims[dim], nnz, old_row_ptrs.data(), old_col_ids.data(), values.data(), kernelType,
 //                     orderingType, corseningType, false, k, supRowSizes.data());
 
-    CSRk_Graph A_mat(ndims[dim], ndims[dim], nnz, old_row_ptrs.data(), old_col_ids.data(), values.data(), kernelType,
+//    CSRk_Graph A_mat(ndims[dim], ndims[dim], nnz, old_row_ptrs.data(), old_col_ids.data(), values.data(), kernelType,
+//                     orderingType, corseningType, false, k, supRowSizes.data());
+
+    CSRk_Graph A_mat(transpose_bitfield.width(), transpose_bitfield.width(), transpose_nnz,
+                     row_ptrs_full.data(), col_ids_full.data(), values.data(), kernelType,
                      orderingType, corseningType, false, k, supRowSizes.data());
 
     A_mat.putInCSRkFormat();
@@ -1365,6 +1743,9 @@ void orderBandK(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, pt
 //                                                              std::span(A_mat.getPermutation(), row_size - 1), ndims[dim]);
     auto row_perm_span = std::span(A_mat.getPermutation(), row_size - 1);
     std::vector<std::uint32_t> cprm(row_perm_span.begin(), row_perm_span.end());
+
+
+
 
     //need to move it *back* into being 1 based.
     for(auto& value : cprm){

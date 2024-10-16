@@ -5,6 +5,8 @@
     "abseil",
     "getopt",
     "boost-graph",
-    "getopt-win32"
-  ]
+    "getopt-win32",
+    "czdr-bitutil"
+  ],
+  "builtin-baseline": "62aa44929954469878eb8fc562af706a8f5615a5"
 }

@@ -1,0 +1,13 @@
+{
+  "registries": [
+    {
+      "kind": "git",
+      "repository": "https://github.com/Cazadorro/czdr-registry",
+      "baseline": "0f6388817e997c27df0a1e8198d644683de5f865",
+      "packages": [
+        "czdr-*"
+      ]
+    }
+  ],
+  "overlay-triplets": ["./vcpkg_overlay_triplets"]
+}

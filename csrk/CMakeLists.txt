@@ -24,4 +24,3 @@ target_link_libraries(spmv-csrk PUBLIC OpenMP::OpenMP_CXX Boost::graph)
 add_executable(spmv-csrk-example spmv.cpp)
 set_property(TARGET spmv-csrk-example PROPERTY  MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 target_link_libraries(spmv-csrk-example PRIVATE spmv-csrk)
-

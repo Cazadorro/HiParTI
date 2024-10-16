@@ -24,7 +24,7 @@
 #include <cstring>
 #include <iostream>
 #include <string>
-
+#include <span>
 #define CSRK_LEVEL 2
 
 using namespace std;
@@ -136,6 +136,9 @@ int main(int argc, char **argv) {
 
   cout << "Read in matrix and config file." << endl;
   // Initialize a matrix object
+  auto row_view = std::span(num_edges, nRows + 1);
+  auto col_view = std::span(adj, NNZ);
+  auto val_view = std::span(val, NNZ);
   CSRk_Graph A_mat(nRows, nRows, NNZ, num_edges, adj, val, kernelType,
                    orderingType, corseningType, false, k, supRowSizes);
 

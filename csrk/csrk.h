@@ -38,7 +38,7 @@
 #include <cstdlib> //for std::aligned_alloc
 #include <new> //for aligned new
 #include <random> // random_shuffle is actually deprecated. we need to use the modern C++ way of dealing with this.
-
+#include <span>
 
 namespace detail {
     [[nodiscard]]
@@ -339,6 +339,8 @@ private:
   float *x;
   float *b;
 
+
+
 public:
   CSRk_Graph();
   CSRk_Graph(long  nRows, long nCols, long nnz, unsigned int *rVec,
@@ -385,7 +387,7 @@ class BAND_k {
 private:
   int k;
   C_GRAPH *smallGraphs;
-
+std::span<C_GRAPH> m_small_graphs_span;
 public:
   BAND_k() {
     k = 0;
@@ -395,6 +397,7 @@ public:
   BAND_k(int inK) {
     k = inK;
     smallGraphs = new C_GRAPH[k];
+    m_small_graphs_span = std::span(smallGraphs, k);
   }
 
   ~BAND_k() {

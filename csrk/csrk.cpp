@@ -1193,6 +1193,7 @@ void BAND_k::uncoarsenTheGraph(int level, CSRk_Graph &csrkGraph,
   // new to old id -- PI2
   unsigned int *newPermutation = new unsigned int[smallGraphs[level - 1].N];
 
+  auto new_permutation_view = std::span(newPermutation, smallGraphs[level - 1].N);
   for (int i = 0; i < numSupRows; i++) {
     unsigned int oldVtxId = permCorserGraph[i];
 
@@ -1301,6 +1302,7 @@ void BAND_k::handCoarsen(int level, int super_node_nnz, CSRk_Graph &csrkGraph) {
 
   // Now make the coarsened graph
   unsigned int *adj_count = new unsigned int[num_coarse_vtxs + 1];
+  auto adj_count_view = std::span(adj_count,num_coarse_vtxs + 1);
   for (unsigned int i_c_vtx = 0; i_c_vtx < num_coarse_vtxs + 1; i_c_vtx++)
     adj_count[i_c_vtx] = 0;
 
@@ -1331,6 +1333,7 @@ void BAND_k::handCoarsen(int level, int super_node_nnz, CSRk_Graph &csrkGraph) {
   unsigned int *coarse_r_vec = new unsigned int[num_coarse_vtxs + 1];
   unsigned int cumulative_index = 0;
 
+  auto coarse_r_vec_view = std::span(coarse_r_vec, num_coarse_vtxs + 1);
   coarse_r_vec[0] = 0;
 
   for (unsigned int i_c_vtx = 0; i_c_vtx < num_coarse_vtxs; i_c_vtx++) {
@@ -1342,6 +1345,7 @@ void BAND_k::handCoarsen(int level, int super_node_nnz, CSRk_Graph &csrkGraph) {
 
   unsigned int *coarse_c_vec = new unsigned int[cumulative_index];
 
+  auto coarse_c_vec_view = std::span(coarse_c_vec,cumulative_index);
   for (unsigned int i_c_vtx = 0; i_c_vtx < num_coarse_vtxs; i_c_vtx++) {
     for (unsigned int i_orgId = r_start_coarsened[i_c_vtx];
          i_orgId < r_start_coarsened[i_c_vtx + 1]; i_orgId++) {
