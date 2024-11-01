@@ -14,6 +14,7 @@
 #include <sstream>
 #include <csrk.h>
 namespace util {
+    //TODO could halv memory by doing upper/lower triangular.
     class Transpose2DBitfield {
     public:
         Transpose2DBitfield(std::size_t width);

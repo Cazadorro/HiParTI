@@ -1577,6 +1577,55 @@ void sortCoordsBySlice(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex mode_
     }
 }
 
+
+std::vector<std::size_t> calculate_slice_column_bandk_permutation(const util::Transpose2DBitfield& transpose_bitfield, std::size_t transpose_nnz, const std::vector<std::size_t>& prev_column_permutation){
+    //CSR data.
+    std::vector<std::uint32_t> row_ptrs(transpose_bitfield.width() + 1);
+    std::vector<std::uint32_t> col_ids(transpose_nnz);
+    row_ptrs[0] = 0;
+    col_ids[0] = 0;
+    std::size_t accumulated_idx = 0;
+    //generate CSR slice tensor.
+    for (std::size_t row = 0; row < transpose_bitfield.width(); ++row) {
+        for (std::size_t col = 0; col < transpose_bitfield.width(); ++col) {
+            if (transpose_bitfield.get(row, col)) {
+                col_ids[accumulated_idx] = col;
+                accumulated_idx += 1;
+            }
+        }
+        row_ptrs[row + 1] = accumulated_idx;
+    }
+    //Meta data for bandk
+    const char *kernelType = "SpMV";
+    const char *corseningType = "HAND";
+
+    //none
+    const char *orderingType = "";
+//    int k = 2;
+//    std::vector<int> supRowSizes = {1};
+    int k = 2;
+    std::vector<int> supRowSizes = {2};
+    //dummy values for "values"
+    std::vector<ptiValue> values(transpose_nnz + 1, 1.0f);
+    CSRk_Graph A_mat(transpose_bitfield.width(), transpose_bitfield.width(), transpose_nnz,
+                     row_ptrs.data(), col_ids.data(), values.data(), kernelType,
+                     orderingType, corseningType, false, k, supRowSizes.data());
+
+    A_mat.putInCSRkFormat();
+
+    assert(A_mat.getPermutation() != nullptr);
+    auto row_perm_span = std::span(A_mat.getPermutation(), transpose_bitfield.width());
+
+    std::vector<std::size_t> next_column_permutation(prev_column_permutation.size());
+    //update previous permutations.
+    assert(row_perm_span.size() <= next_column_permutation.size());
+    for (std::size_t perm_idx = 0; perm_idx < prev_column_permutation.size(); ++perm_idx) {
+        next_column_permutation[perm_idx] = prev_column_permutation[row_perm_span[perm_idx]];
+    }
+    return next_column_permutation;
+}
+
+
 //coords = [xyz,xyz,xyz.... nnz = number of non zeros.  nm = number of modes. ndims = size of each mode. dim = chosen dim. orgIds = permutation change.
 
 /**
@@ -1611,9 +1660,8 @@ void orderBandK2(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const mode_
     }
     //sort the slices to we can index them in sequence.
     sortCoordsBySlice(coords, nnz, mode_count, col_mode, row_mode);
-
-
     //extract the vector of indices that represent the non row_mode/col_mode indices for the given index in coords
+    //ie extract the indices that make up the "slice" index.
     auto extract_slice_indexes_at = [&](std::size_t i) {
         std::vector<ptiIndex> slice_indexes;
         slice_indexes.reserve(mode_count - 2);
@@ -1628,68 +1676,35 @@ void orderBandK2(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const mode_
     //iterating through each sorted by slices, then rows, the cols.
     std::vector<ptiIndex> previous_slice_indexes(mode_count - 2);
     previous_slice_indexes = extract_slice_indexes_at(0);
-    util::Transpose2DBitfield transpose_bitfield(std::max(row_size, col_size));
+    auto square_slice_width = std::max(row_size, col_size);
+    util::Transpose2DBitfield transpose_bitfield(square_slice_width);
     std::size_t transpose_nnz = 0;
     //fill in initial permutation
-    std::vector<std::size_t> prev_column_permutation(mode_sizes[col_mode]);
+    //square_slice_width could technically be larger than the actual column size, so we handle that *after* performing bandk reordering.
+    std::vector<std::size_t> prev_column_permutation(square_slice_width);
     std::iota(prev_column_permutation.begin(), prev_column_permutation.end(), 0);
-    auto calculate_slice_column_bandk_permutation = [](
-            const util::Transpose2DBitfield& transpose_bitfield, std::size_t transpose_nnz, const std::vector<std::size_t>& prev_column_permutation){
-        //CSR data.
-        std::vector<std::uint32_t> row_ptrs(transpose_bitfield.width() + 1);
-        std::vector<std::uint32_t> col_ids(transpose_nnz);
-        row_ptrs[0] = 0;
-        col_ids[0] = 0;
-        std::size_t accumulated_idx = 0;
-        //generate CSR slice tensor.
-        for (std::size_t row = 0; row < transpose_bitfield.width(); ++row) {
-            for (std::size_t col = 0; col < transpose_bitfield.width(); ++col) {
-                if (transpose_bitfield.get(row, col)) {
-                    col_ids[accumulated_idx] = col;
-                    accumulated_idx += 1;
-                }
-            }
-            row_ptrs[row + 1] = accumulated_idx;
-        }
-        //Meta data for bandk
-        const char *kernelType = "SpMV";
-        const char *corseningType = "HAND";
-        const char *orderingType = "";
-        int k = 2;
-        std::vector<int> supRowSizes = {1};
 
-        //dummy values for "values"
-        std::vector<ptiValue> values(transpose_nnz + 1, 1.0f);
-        CSRk_Graph A_mat(transpose_bitfield.width(), transpose_bitfield.width(), transpose_nnz,
-                         row_ptrs.data(), col_ids.data(), values.data(), kernelType,
-                         orderingType, corseningType, false, k, supRowSizes.data());
-
-        A_mat.putInCSRkFormat();
-
-        auto row_perm_span = std::span(A_mat.getPermutation(), transpose_bitfield.width());
-
-        std::vector<std::size_t> next_column_permutation(prev_column_permutation.size());
-        //update previous permutations.
-        assert(row_perm_span.size() <= next_column_permutation.size());
-        for (std::size_t perm_idx = 0; perm_idx < prev_column_permutation.size(); ++perm_idx) {
-            next_column_permutation[perm_idx] = prev_column_permutation[row_perm_span[perm_idx]];
-        }
-        return next_column_permutation;
-    };
     for (std::size_t i = 0; i < nnz; ++i) {
         auto current_slice_indexes = extract_slice_indexes_at(i);
-        if (current_slice_indexes == previous_slice_indexes) {
-            auto curr_row = coords[i][row_mode];
-            auto curr_col = coords[i][col_mode];
-            auto already_set = transpose_bitfield.test_and_set(curr_row, curr_col);
-            if (!already_set) {
-                transpose_nnz += 1;
-            }
-        } else {
-            prev_column_permutation = calculate_slice_column_bandk_permutation(transpose_bitfield, transpose_nnz, prev_column_permutation);
+        // if we are starting a new slice, get current slice column permutation from previous slice and start a new one.
+        if (current_slice_indexes != previous_slice_indexes) {
+            prev_column_permutation = calculate_slice_column_bandk_permutation(transpose_bitfield, transpose_nnz,
+                                                                               prev_column_permutation);
             transpose_bitfield.clear();
             transpose_nnz = 0;
             previous_slice_indexes = current_slice_indexes;
+        }
+        auto curr_row = coords[i][row_mode];
+        auto curr_col = coords[i][col_mode];
+        //sets the transpose as well here
+        auto already_set = transpose_bitfield.test_and_set(curr_row, curr_col);
+        //if we didn't already count this bit in the bitfield.
+        if (!already_set) {
+            if(curr_row == curr_col){
+                transpose_nnz += 1; //on diagonal, so only one non zero
+            }else{
+                transpose_nnz += 2; //both index + transpose, so 2 non zeros.
+            }
         }
     }
     //won't trigger last iteration with last frame, as difference won't be found.
@@ -1698,6 +1713,20 @@ void orderBandK2(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const mode_
     //Creating data from previous "order" function inside orderit.
     std::vector<std::uint32_t> cprm(prev_column_permutation.begin(), prev_column_permutation.end());
 
+    //TODO For now, just remove values which have a source permutation index over the size of the number of cols,
+    // when we verify this actually runs correctly, then we can better handle not harming the ordering up of all
+    // down wind column indexes.
+    std::erase_if(cprm, [col_size](auto value){
+        return value > col_size - 1;
+    });
+
+    if(cprm.size() != col_size){
+        for(auto value : cprm){
+            fmt::println(stderr, "{}", value);
+        }
+        fmt::println(stderr, "{} vs {}", cprm.size(), col_size);
+    }
+    assert(cprm.size() == col_size);
     //need to move it *back* into being 1 based.
     for(auto& value : cprm){
         value += 1;
@@ -1705,6 +1734,7 @@ void orderBandK2(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const mode_
     //suppposed to be 1 larger.
     cprm.insert(cprm.begin(), 0);
 
+    //At this point, this is pretty much how HiCOO did things, so not changing
     auto invcprm = std::vector<ptiIndex>(mode_sizes[chosen_mode]+1);
     auto saveOrgIds = std::vector<ptiIndex>(mode_sizes[chosen_mode]+1);
 

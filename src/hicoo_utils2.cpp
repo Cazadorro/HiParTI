@@ -10,8 +10,10 @@ namespace util {
 
     bool Transpose2DBitfield::test_and_set(std::size_t row, std::size_t col) {
         auto linear_index = row * m_width + col;
+        auto transpose_linear_index = col * m_width + row;
         auto prev_value = m_bit_field.get(linear_index);
         m_bit_field.set(linear_index);
+        m_bit_field.set(transpose_linear_index);
         return prev_value;
     }
 
