@@ -27,6 +27,12 @@ namespace util {
         std::size_t width() const;
 
         void clear();
+
+        bool is_identity() const;
+
+        bool is_empty() const;
+
+        std::size_t element_count() const;
     private:
         std::size_t m_width;
         czdr::bit_vector<std::uint32_t> m_bit_field;

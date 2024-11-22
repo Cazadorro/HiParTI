@@ -29,4 +29,26 @@ namespace util {
     void Transpose2DBitfield::clear() {
         m_bit_field.fill(false);
     }
+
+    bool Transpose2DBitfield::is_identity() const {
+        for(std::size_t i = 0; i < m_width; ++i){
+            auto row = i;
+            auto col = i;
+            auto linear_index = row * m_width + col;
+            if(!m_bit_field.get(linear_index)){
+                return false;
+            }
+        }
+        if(element_count() == m_width){
+            return true;
+        }
+    }
+
+    bool Transpose2DBitfield::is_empty() const {
+        return m_bit_field.empty();
+    }
+
+    std::size_t Transpose2DBitfield::element_count() const {
+        return czdr::popcount(m_bit_field);
+    }
 }

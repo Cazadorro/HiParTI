@@ -587,6 +587,8 @@ int ptiPreprocessSparseTensor(
         k_begin = kptr->data[k];
         k_end = kptr->data[k+1];   // exclusive
         /* Sort blocks in each kernel in Morton-order */
+        printf(" %ull k_begin:\n", k_begin);
+        printf(" %ull k_end:\n", k_end);
         ptiSparseTensorSortIndexMorton(tsr, 1, k_begin, k_end, sb_bits, tk);
         // ptiSparseTensorSortIndexRowBlock(tsr, 1, k_begin, k_end, sb_bits, tk);
 #if PARTI_DEBUG == 3

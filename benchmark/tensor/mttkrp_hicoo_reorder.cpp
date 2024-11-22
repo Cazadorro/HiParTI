@@ -25,6 +25,9 @@
 #include "../src/sptensor/sptensor.h"
 #include "../src/sptensor/hicoo/hicoo.h"
 
+#include <fstream>
+#include <fmt/core.h>
+
 void print_usage(char ** argv) {
     printf("Usage: %s [options] \n", argv[0]);
     printf("Options: -i INPUT, --input=INPUT\n");
@@ -161,7 +164,10 @@ int main(int argc, char ** argv) {
     if (renumber == 1)
         printf("niters_renum: %d\n\n", niters_renum);
 
+    std::cout << "USING FILE : " << fi_name << std::endl;
     ptiAssert(ptiLoadSparseTensor(&tsr, 1, fi_name) == 0);
+#if defined(PRINT_SPARSE)
+
     auto load_tsr_result = util::print_sparse(tsr);
     std::cout << load_tsr_result;
     std::cout << "\n\n\n\nXXX\n\n\n\n" << std::endl;
@@ -170,6 +176,7 @@ int main(int argc, char ** argv) {
     std::cout << test_result;
     std::cout << "\n\n\n\nXXX\n\n\n\n" << std::endl;
     std::cout << std::flush;
+#endif
 
     // ptiSparseTensorSortIndex(&tsr, 1);
     fclose(fi);
@@ -178,6 +185,7 @@ int main(int argc, char ** argv) {
 
     /* Renumber the input tensor */
     ptiIndex ** map_inds;
+    std::ofstream output_file;
     if (renumber > 0) {
         map_inds = (ptiIndex **)malloc(tsr.nmodes * sizeof *map_inds);
         pti_CheckOSError(!map_inds, "MTTKRP HiCOO");
@@ -194,13 +202,17 @@ int main(int argc, char ** argv) {
         ptiStartTimer(renumber_timer);
 
         if ( renumber == 1 || renumber == 2) { /* Set the Lexi-order or BFS-like renumbering */
-//            orderit(&tsr, map_inds, renumber, niters_renum);
-            orderitBandK(&tsr, map_inds, renumber, niters_renum);
+            orderit(&tsr, map_inds, renumber, niters_renum);
             // ptiIndexRenumber(&tsr, map_inds, renumber, niters_renum);
+            output_file.open("test_lexi_reorder_timing.txt", std::ios_base::app | std::ios_base::out);
         }
-        if ( renumber == 3) { /* Set randomly renumbering */
+        else if ( renumber == 3) { /* Set randomly renumbering */
             printf("[Random Indexing]\n");        
             ptiGetRandomShuffledIndices(&tsr, map_inds);
+        }
+        else if (renumber == 4) {
+            orderitBandK(&tsr, map_inds, renumber, niters_renum);
+            output_file.open("test_bandk_reorder_timing.txt", std::ios_base::app | std::ios_base::out);
         }
         fflush(stdout);
 
@@ -234,10 +246,11 @@ int main(int argc, char ** argv) {
     ptiNewTimer(&convert_timer, 0);
     ptiStartTimer(convert_timer);
 
+#if defined(PRINT_SPARSE)
     auto pre_hicoo_tsr_result = util::print_sparse(tsr);
     std::cout << pre_hicoo_tsr_result;
     std::cout << std::flush;
-
+#endif
     ptiAssert(ptiSparseTensorToHiCOO(&hitsr, &max_nnzb, &tsr, sb_bits, sk_bits, sc_bits, tk) == 0);
 
     ptiStopTimer(convert_timer);
@@ -278,6 +291,7 @@ int main(int argc, char ** argv) {
 
     ptiIndex * mats_order = (ptiIndex*)malloc(nmodes * sizeof(*mats_order));
 
+
     if (mode == HIPARTI_INDEX_MAX) {
         for(ptiIndex mode=0; mode<nmodes; ++mode) {
             /* Reset U[nmodes] */
@@ -316,7 +330,10 @@ int main(int argc, char ** argv) {
             ptiStopTimer(timer);
             char * prg_name;
             asprintf(&prg_name, "CPU  SpTns MTTKRP MODE %" HIPARTI_PRI_INDEX, mode);
-            ptiPrintAverageElapsedTime(timer, niters, prg_name);
+            output_file << fi_name;
+            output_file << prg_name;
+            output_file << fmt::format(" {0:.10f}s",ptiPrintAverageElapsedTime(timer, niters, prg_name));
+            output_file << std::endl;
             printf("\n");
             ptiFreeTimer(timer);
 

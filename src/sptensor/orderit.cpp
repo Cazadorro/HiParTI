@@ -5,10 +5,13 @@
 #include "HiParTI.h"
 #include "renumber.h"
 
-#define TEST_CSR_ORDER_OUTPUT
-#ifdef TEST_CSR_ORDER_OUTPUT
+//#define TEST_CSR_ORDER_OUTPUT
+//#define TEST_CPRM_ORDER_OUTPUT
+//#define TEST_COO_ORDER_OUTPUT
+//#ifdef TEST_CSR_ORDER_OUTPUT
+//#include <iostream>
+//#endif
 #include <iostream>
-#endif
 /** EXTRA INCLUDES**/
 #include "hicoo_utils2.h"
 #include <csrk.h>
@@ -158,12 +161,14 @@ void orderit(ptiSparseTensor * tsr, ptiIndex ** newIndices, int const renumber, 
             coords[z][m] = tsr->inds[m].data[z];
         }
     }
+#ifdef TEST_COO_ORDER_OUTPUT
     for(z = 0; z < nnz; z++){
         fmt::println(" coords[{}] {},{},{}",z,
         coords[z][0],
                 coords[z][1],
                 coords[z][2]);
     }
+#endif
 
 
 
@@ -799,13 +804,14 @@ void orderDim(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, ptiI
 
 
     rowPtrs = reinterpret_cast<ptiNnzIndex*>(realloc(rowPtrs, (sizeof(ptiNnzIndex) * (mtxNrows+2))));
-
+#ifdef TEST_COO_ORDER_OUTPUT
     for(std::size_t idx = 0; idx < mtxNrows+2; ++idx){
         fmt::println("row {} = {}", idx, rowPtrs[idx]);
     }
     for(std::size_t idx = 0; idx < nnz+2; ++idx){
         fmt::println("col {} = {}", idx, colIds[idx]);
     }
+#endif
 
 #ifdef TEST_CSR_ORDER_OUTPUT
     {
@@ -837,9 +843,11 @@ void orderDim(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, ptiI
     
     t0 = u_seconds();
     lexOrderThem(mtxNrows, ndims[dim], rowPtrs, colIds, cprm);
+#ifdef TEST_CPRM_ORDER_OUTPUT
     for(std::size_t idx = 0; idx < ndims[dim]+1; ++idx){
         std::cout << "cprm, " << idx << ", " << cprm[idx] << "\n";
     }
+#endif
     t1 =u_seconds()-t0;
     printf("dim %u lexorder time %.2f\n", dim, t1);
     // printf("cprm: \n");
@@ -857,6 +865,7 @@ void orderDim(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, ptiI
     // printf("invcprm: \n");
     // ptiDumpIndexArray(invcprm, ndims[dim] + 1, stdout);
 
+#ifdef TEST_COO_ORDER_OUTPUT
     fmt::println("ALL OLD");
     for (z = 0; z < nnz; z++) {
         fmt::println(" coords[{}][{}] = {},{},{}", z, dim,
@@ -882,6 +891,7 @@ void orderDim(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const nm, ptiI
                      coords[z][1],
                      coords[z][2]);
     }
+#endif
     free(mode_order);
     free(saveOrgIds);
     free(invcprm);
@@ -1688,8 +1698,13 @@ void orderBandK2(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const mode_
         auto current_slice_indexes = extract_slice_indexes_at(i);
         // if we are starting a new slice, get current slice column permutation from previous slice and start a new one.
         if (current_slice_indexes != previous_slice_indexes) {
-            prev_column_permutation = calculate_slice_column_bandk_permutation(transpose_bitfield, transpose_nnz,
-                                                                               prev_column_permutation);
+
+            bool valid_bandk_tensor = !transpose_bitfield.is_empty() && !transpose_bitfield.is_identity() &&
+                                      transpose_bitfield.element_count() >= (square_slice_width + square_slice_width);
+            if(valid_bandk_tensor) {
+                prev_column_permutation = calculate_slice_column_bandk_permutation(transpose_bitfield, transpose_nnz,
+                                                                                   prev_column_permutation);
+            }
             transpose_bitfield.clear();
             transpose_nnz = 0;
             previous_slice_indexes = current_slice_indexes;
@@ -1719,13 +1734,14 @@ void orderBandK2(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const mode_
     std::erase_if(cprm, [col_size](auto value){
         return value > col_size - 1;
     });
-
+#ifdef TEST_COO_ORDER_OUTPUT
     if(cprm.size() != col_size){
         for(auto value : cprm){
             fmt::println(stderr, "{}", value);
         }
         fmt::println(stderr, "{} vs {}", cprm.size(), col_size);
     }
+#endif
     assert(cprm.size() == col_size);
     //need to move it *back* into being 1 based.
     for(auto& value : cprm){
