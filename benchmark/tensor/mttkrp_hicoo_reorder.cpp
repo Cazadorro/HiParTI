@@ -186,6 +186,10 @@ int main(int argc, char ** argv) {
     /* Renumber the input tensor */
     ptiIndex ** map_inds;
     std::ofstream output_file;
+
+    if( renumber == 0){
+        output_file.open("test_none_reorder_timing.txt", std::ios_base::app);
+    }
     if (renumber > 0) {
         map_inds = (ptiIndex **)malloc(tsr.nmodes * sizeof *map_inds);
         pti_CheckOSError(!map_inds, "MTTKRP HiCOO");
@@ -204,7 +208,7 @@ int main(int argc, char ** argv) {
         if ( renumber == 1 || renumber == 2) { /* Set the Lexi-order or BFS-like renumbering */
             orderit(&tsr, map_inds, renumber, niters_renum);
             // ptiIndexRenumber(&tsr, map_inds, renumber, niters_renum);
-            output_file.open("test_lexi_reorder_timing.txt", std::ios_base::app | std::ios_base::out);
+            output_file.open("test_lexi_reorder_timing.txt", std::ios_base::app);
         }
         else if ( renumber == 3) { /* Set randomly renumbering */
             printf("[Random Indexing]\n");        
@@ -212,7 +216,7 @@ int main(int argc, char ** argv) {
         }
         else if (renumber == 4) {
             orderitBandK(&tsr, map_inds, renumber, niters_renum);
-            output_file.open("test_bandk_reorder_timing.txt", std::ios_base::app | std::ios_base::out);
+            output_file.open("test_bandk_reorder_timing.txt", std::ios_base::app);
         }
         fflush(stdout);
 
@@ -251,6 +255,12 @@ int main(int argc, char ** argv) {
     std::cout << pre_hicoo_tsr_result;
     std::cout << std::flush;
 #endif
+    auto nnz = tsr.nnz;
+    std::vector<std::uint64_t> mode_sizes;
+    mode_sizes.reserve(tsr.nmodes);
+    for(int i = 0; i < tsr.nmodes; ++i){
+        mode_sizes.push_back(tsr.ndims[i]);
+    }
     ptiAssert(ptiSparseTensorToHiCOO(&hitsr, &max_nnzb, &tsr, sb_bits, sk_bits, sc_bits, tk) == 0);
 
     ptiStopTimer(convert_timer);
@@ -332,7 +342,12 @@ int main(int argc, char ** argv) {
             asprintf(&prg_name, "CPU  SpTns MTTKRP MODE %" HIPARTI_PRI_INDEX, mode);
             output_file << fi_name;
             output_file << prg_name;
-            output_file << fmt::format(" {0:.10f}s",ptiPrintAverageElapsedTime(timer, niters, prg_name));
+            std::string mode_sizes_string;
+            for(const auto mode_size : mode_sizes){
+                mode_sizes_string += std::to_string(mode_size) +  ", " ;
+            }
+            auto time_string = fmt::format("{0:.10f}s", ptiPrintAverageElapsedTime(timer, niters, prg_name));
+            output_file << fmt::format(", {} {}, {}, {}, {}, {}", mode_sizes_string, mode, nnz, time_string, tk, tb);
             output_file << std::endl;
             printf("\n");
             ptiFreeTimer(timer);

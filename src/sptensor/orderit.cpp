@@ -1649,7 +1649,6 @@ std::vector<std::size_t> calculate_slice_column_bandk_permutation(const util::Tr
  * @param orgIds the original *and* returned permutation for each dimension.
  */
 void orderBandK2(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const mode_count, ptiIndex * mode_sizes, ptiIndex const chosen_mode, ptiIndex ** orgIds) {
-
     assert((mode_count != 1, "Currently expects mode count to be more than 1"));
 
     ptiIndex col_mode = chosen_mode;
@@ -2091,7 +2090,7 @@ void orderitBandK(ptiSparseTensor * tsr, ptiIndex ** newIndices, int const renum
 
     /* checkEmptySlices(coords, nnz, nm, tsr->ndims); */
 
-    if (renumber == 1) {    /* Lexi-order renumbering */
+    if (renumber <= 4 && renumber != 2) {    /* Lexi-order renumbering */
 
         ptiIndex ** orgIds = (ptiIndex **) malloc(sizeof(ptiIndex*) * nm);
 
@@ -2106,7 +2105,7 @@ void orderitBandK(ptiSparseTensor * tsr, ptiIndex ** newIndices, int const renum
         // fprintf(stdout, "orgIds:\n");
         for (its = 0; its < iterations; its++)
         {
-            printf("[Lexi-order] Optimizing the numbering for its %u\n", its+1);
+            printf("[Bandk-order] Optimizing the numbering for its %u\n", its+1);
             for (m = 0; m < nm; m++)
                 orderBandK2(coords, nnz, nm, tsr->ndims, m, orgIds);
 

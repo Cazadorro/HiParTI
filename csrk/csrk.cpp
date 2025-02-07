@@ -1301,10 +1301,9 @@ void BAND_k::handCoarsen(int level, int super_node_nnz, CSRk_Graph &csrkGraph) {
   }
 
   // Now make the coarsened graph
-  unsigned int *adj_count = new unsigned int[num_coarse_vtxs + 1];
-  auto adj_count_view = std::span(adj_count,num_coarse_vtxs + 1);
+  std::vector<unsigned int> adj_count(num_coarse_vtxs + 1);
   for (unsigned int i_c_vtx = 0; i_c_vtx < num_coarse_vtxs + 1; i_c_vtx++)
-    adj_count[i_c_vtx] = 0;
+    adj_count.at(i_c_vtx) = 0;
 
   for (unsigned int i_c_vtx = 0; i_c_vtx < num_coarse_vtxs; i_c_vtx++) {
     for (unsigned int i_orgId = r_start_coarsened[i_c_vtx];
@@ -1320,10 +1319,10 @@ void BAND_k::handCoarsen(int level, int super_node_nnz, CSRk_Graph &csrkGraph) {
 
           unsigned int index = orgVtx_sup_map[c_vec[j_colId]];
           if (index == i_c_vtx) {
-            adj_count[i_c_vtx]++;
+            adj_count.at(i_c_vtx)++;
           } else {
-            adj_count[i_c_vtx]++;
-            adj_count[index]++;
+            adj_count.at(i_c_vtx)++;
+            adj_count.at(index)++;
           }
         }
       }
@@ -1337,11 +1336,11 @@ void BAND_k::handCoarsen(int level, int super_node_nnz, CSRk_Graph &csrkGraph) {
   coarse_r_vec[0] = 0;
 
   for (unsigned int i_c_vtx = 0; i_c_vtx < num_coarse_vtxs; i_c_vtx++) {
-    cumulative_index += adj_count[i_c_vtx];
+    cumulative_index += adj_count.at(i_c_vtx);
     coarse_r_vec[i_c_vtx + 1] = cumulative_index;
-    adj_count[i_c_vtx] = coarse_r_vec[i_c_vtx];
+    adj_count.at(i_c_vtx) = coarse_r_vec[i_c_vtx];
   }
-  adj_count[num_coarse_vtxs] = coarse_r_vec[num_coarse_vtxs];
+  adj_count.at(num_coarse_vtxs) = coarse_r_vec[num_coarse_vtxs];
 
   unsigned int *coarse_c_vec = new unsigned int[cumulative_index];
 
@@ -1357,13 +1356,13 @@ void BAND_k::handCoarsen(int level, int super_node_nnz, CSRk_Graph &csrkGraph) {
         if (c_vec[j_colId] >= r_start_coarsened[i_c_vtx]) {
           unsigned int index = orgVtx_sup_map[c_vec[j_colId]];
           if (index == i_c_vtx) {
-            coarse_c_vec[adj_count[i_c_vtx]] = i_c_vtx;
-            adj_count[i_c_vtx]++;
+            coarse_c_vec[adj_count.at(i_c_vtx)] = i_c_vtx;
+            adj_count.at(i_c_vtx)++;
           } else {
-            coarse_c_vec[adj_count[i_c_vtx]] = index;
-            adj_count[i_c_vtx]++;
-            coarse_c_vec[adj_count[index]] = i_c_vtx;
-            adj_count[index]++;
+            coarse_c_vec[adj_count.at(i_c_vtx)] = index;
+            adj_count.at(i_c_vtx)++;
+            coarse_c_vec[adj_count.at(index)] = i_c_vtx;
+            adj_count.at(index)++;
           }
         }
       }
@@ -1384,63 +1383,63 @@ void BAND_k::handCoarsen(int level, int super_node_nnz, CSRk_Graph &csrkGraph) {
   int curr_neighbor = 0, adj_index = 0;
   int degree = 0;
 
-  unsigned int *distinct_neighbor = new unsigned int[num_coarse_vtxs + 1];
-  unsigned int *distinct_adj = new unsigned int[cumulative_index];
-  unsigned int *adj_degree = new unsigned int[cumulative_index];
+  std::vector<unsigned int> distinct_neighbor(num_coarse_vtxs + 1);
+  std::vector<unsigned int> distinct_adj(cumulative_index);
+  std::vector<unsigned int> adj_degree(cumulative_index);
 
-  distinct_neighbor[0] = 0;
+  distinct_neighbor.at(0) = 0;
 
   for (unsigned int i = 0; i < num_coarse_vtxs; i++) {
-    prev_neighbor = adj_vector[coarse_r_vec[i]];
+    prev_neighbor = adj_vector.at(coarse_r_vec[i]);
     degree = 1;
-    distinct_adj[adj_index] = prev_neighbor;
+    distinct_adj.at(adj_index) = prev_neighbor;
     adj_index++;
 
     for (unsigned int j = coarse_r_vec[i] + 1; j < coarse_r_vec[i + 1]; j++) {
-      curr_neighbor = adj_vector[j];
+      curr_neighbor = adj_vector.at(j);
       if (prev_neighbor == curr_neighbor) {
         degree++;
       } else {
-        adj_degree[adj_index - 1] = degree;
+        adj_degree.at(adj_index - 1) = degree;
         prev_neighbor = curr_neighbor;
-        distinct_adj[adj_index] = prev_neighbor;
+        distinct_adj.at(adj_index) = prev_neighbor;
         adj_index++;
 
         degree = 1;
       }
     }
-    adj_degree[adj_index - 1] = degree;
-    distinct_neighbor[i + 1] = adj_index;
+    adj_degree.at(adj_index - 1) = degree;
+    distinct_neighbor.at(i + 1) = adj_index;
   }
 
   smallGraphs[level].N = num_coarse_vtxs;
-  smallGraphs[level].NNZ = distinct_neighbor[num_coarse_vtxs];
+  smallGraphs[level].NNZ = distinct_neighbor.at(num_coarse_vtxs);
 
   smallGraphs[level].r_vec = new unsigned int[num_coarse_vtxs + 1];
   smallGraphs[level].c_vec = new unsigned int[smallGraphs[level].NNZ];
   smallGraphs[level].degree = new unsigned int[smallGraphs[level].NNZ];
 
   for (unsigned int i = 0; i < num_coarse_vtxs; i++) {
-    smallGraphs[level].r_vec[i] = distinct_neighbor[i];
-    for (unsigned int j = distinct_neighbor[i]; j < distinct_neighbor[i + 1];
+    smallGraphs[level].r_vec[i] = distinct_neighbor.at(i);
+    for (unsigned int j = distinct_neighbor.at(i); j < distinct_neighbor.at(i + 1);
          j++) {
-      smallGraphs[level].c_vec[j] = distinct_adj[j];
-      smallGraphs[level].degree[j] = adj_degree[j];
+      smallGraphs[level].c_vec[j] = distinct_adj.at(j);
+      smallGraphs[level].degree[j] = adj_degree.at(j);
     }
   }
   smallGraphs[level].r_vec[num_coarse_vtxs] =
-      distinct_neighbor[num_coarse_vtxs];
+      distinct_neighbor.at(num_coarse_vtxs);
 
   csrkGraph.mapCoarseToFinerRows[level] = r_start_coarsened;
 
   // Free allocated memory
-  delete[] distinct_adj;
-  delete[] adj_degree;
-  delete[] distinct_neighbor;
+//  delete[] distinct_adj;
+//  delete[] adj_degree;
+//  delete[] distinct_neighbor;
 
   delete[] coarse_r_vec;
   delete[] coarse_c_vec;
-  delete[] adj_count;
+//  delete[] adj_count;
   delete[] orgVtx_sup_map;
 
 #ifdef DEBUG
