@@ -60,6 +60,10 @@ void ptiSparseTensorSortIndexMorton(
     ptiNnzIndex end,
     ptiElementIndex sb_bits,
     int tk);
+
+bool validate_quick_sort_index_morton_3d(ptiSparseTensor *tsr, ptiNnzIndex lo, ptiNnzIndex hi, ptiElementIndex sb_bits);
+ptiMortonIndex create_morton_key_3d(ptiIndex x, ptiIndex y, ptiIndex z);
+ptiMortonIndex create_morton_key_3d_from_tensor_index(ptiSparseTensor * const tsr1, uint64_t loc1);
 void ptiSparseTensorSortIndexExceptSingleModeRowBlock(
     ptiSparseTensor *tsr,
     int force,

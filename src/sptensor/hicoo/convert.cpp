@@ -17,6 +17,10 @@
 */
 
 #include <HiParTI.h>
+#include <stdexcept>
+#include <span>
+#include <fmt/format.h>
+
 #include "../sptensor.h"
 #include "hicoo.h"
 
@@ -582,20 +586,47 @@ int ptiPreprocessSparseTensor(
     /* Sort blocks in each kernel in Morton-order */
     ptiNnzIndex k_begin, k_end;
     /* Loop for all kernels, 0-kptr.len for OMP code */
-    #pragma omp parallel for num_threads(tk) 
+    std::span kptr_data(kptr->data, kptr->len);
+    for(ptiNnzIndex k=0; k<kptr->len - 1; ++k) {
+        k_begin =kptr_data[k];
+        k_end = kptr_data[k+1];
+        // printf(" %ull k_begin:\n", k_begin);
+        // printf(" %ull k_end:\n", k_end);
+        if (k_begin > k_end) {
+            throw std::runtime_error("k_begin > k_end" + std::to_string(k_begin) + " vs " + std::to_string(k_end) + "\n");
+        }
+    }
+
+    //#pragma omp parallel for num_threads(tk)
+#pragma omp parallel for num_threads(tk)
     for(ptiNnzIndex k=0; k<kptr->len - 1; ++k) {
         k_begin = kptr->data[k];
         k_end = kptr->data[k+1];   // exclusive
         /* Sort blocks in each kernel in Morton-order */
-        printf(" %ull k_begin:\n", k_begin);
-        printf(" %ull k_end:\n", k_end);
+        // fmt::println("BEFORE");
+        // for (std::size_t i = k_begin; i < (k_end); ++i) {
+        //     fmt::println("{},{}", Uint128High64(create_morton_key_3d_from_tensor_index(tsr, i)),Uint128Low64(create_morton_key_3d_from_tensor_index(tsr, i)));
+        // }
+        // fmt::println("AFTER");
+        // printf(" %ull k_begin:\n", k_begin);
+        // printf(" %ull k_end:\n", k_end);
         ptiSparseTensorSortIndexMorton(tsr, 1, k_begin, k_end, sb_bits, tk);
         // ptiSparseTensorSortIndexRowBlock(tsr, 1, k_begin, k_end, sb_bits, tk);
+        if (!validate_quick_sort_index_morton_3d(tsr, k_begin, k_end, sb_bits)) {
+            // for (std::size_t i = k_begin; i < (k_end); ++i) {
+            //     fmt::println("{},{}", Uint128High64(create_morton_key_3d_from_tensor_index(tsr, i)),Uint128Low64(create_morton_key_3d_from_tensor_index(tsr, i)));
+            // }
+            assert(false);
+            // assert(validate_quick_sort_index_morton_3d(tsr, k_begin, k_end, sb_bits));
+        }
+
+
 #if PARTI_DEBUG == 3
     printf("Kernel %" HIPARTI_PRI_NNZ_INDEX ": Sorted by ptiSparseTensorSortIndexMorton.\n", k);
     ptiAssert(ptiDumpSparseTensor(tsr, 0, stdout) == 0);
 #endif
     }
+
 
     ptiStopTimer(morton_sort_timer);
     ptiPrintElapsedTime(morton_sort_timer, "\t\tMorton sorting");
