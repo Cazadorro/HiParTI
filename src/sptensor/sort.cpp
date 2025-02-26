@@ -419,9 +419,9 @@ void ptiSparseTensorSortIndexMorton(
     }
 
     if (needsort || force) {
-#pragma omp parallel num_threads(tk)
+// #pragma omp parallel num_threads(1)
         {
-#pragma omp single nowait
+// #pragma omp single nowait
             {
                 /* TODO: add support for other order tensors */
                 switch (tsr->nmodes) {
@@ -1386,23 +1386,20 @@ static ptiNnzIndex quick_sort_hoare_partition_index_morton_3d(ptiSparseTensor *t
     std::int64_t p = lo; //lo + (hi-lo)/2;
     std::int64_t i = std::int64_t(lo) - 1;
     std::int64_t j = std::int64_t(hi) + 1;
-
+    auto pivot = create_morton_key_3d_from_tensor_index(tsr, p);
     while (true) {
         //important to do while here https://stackoverflow.com/a/63623830/, and another bug with quick sort in the original version.
         do {
-                i = i + 1;
-        } while ((i < bounds_max) && (pti_SparseTensorCompareIndicesMorton3D(tsr, i, tsr, p) < 0));
+            i = i + 1;
+        } while (create_morton_key_3d_from_tensor_index(tsr, i) < pivot);
         do {
             j = j - 1;
-        } while ((pti_SparseTensorCompareIndicesMorton3D(tsr, j, tsr, p) > 0));
+        } while (create_morton_key_3d_from_tensor_index(tsr, j) > pivot);
         if (i >= j) {
             return j;
         }
-        if (!(i <= bounds_max)) {
-            assert(i <= bounds_max);
-        }
-
-        assert(j >= bounds_min);
+        assert(i <= bounds_max && i >= bounds_min);
+        assert(j >= bounds_min && j <= bounds_max);
         pti_SwapValues(tsr, i, j);
     }
 }

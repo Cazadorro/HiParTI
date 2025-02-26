@@ -598,7 +598,7 @@ int ptiPreprocessSparseTensor(
     }
 
     //#pragma omp parallel for num_threads(tk)
-#pragma omp parallel for num_threads(tk)
+#pragma omp parallel for num_threads(1)
     for(ptiNnzIndex k=0; k<kptr->len - 1; ++k) {
         k_begin = kptr->data[k];
         k_end = kptr->data[k+1];   // exclusive
