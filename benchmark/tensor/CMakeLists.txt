@@ -9,6 +9,16 @@ else()
     file(GLOB_RECURSE BENCH_SRCS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "*.c" "*.cpp")
 endif()
 
+#find_package(Tracy CONFIG REQUIRED)
+#include(FetchContent)
+#FetchContent_Declare(
+#        tracy
+#        GIT_REPOSITORY https://github.com/wolfpld/tracy.git
+#        GIT_TAG master
+#        GIT_SHALLOW TRUE
+#        GIT_PROGRESS TRUE
+#)
+#FetchContent_MakeAvailable(tracy)
 
 foreach(BENCH_SRC IN LISTS BENCH_SRCS)
     get_filename_component(BENCH_EXE "${BENCH_SRC}" NAME_WE)
@@ -28,8 +38,13 @@ foreach(BENCH_SRC IN LISTS BENCH_SRCS)
         set_property(TARGET "${BENCH_EXE}" PROPERTY  MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
     else()
-        target_link_libraries("${BENCH_EXE}" PRIVATE HiParTI)
+        target_link_libraries("${BENCH_EXE}" PRIVATE HiParTI )
+#        set_property(TARGET "${BENCH_EXE}" PROPERTY  MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:DebugDLL>")
     endif()
+#    target_link_libraries("${BENCH_EXE}" PUBLIC Tracy::TracyClient)
+
+#    target_link_libraries("${BENCH_EXE}" PUBLIC TracyClient)
+    target_compile_definitions("${BENCH_EXE}" PRIVATE -DTRACEY_ENABLE)
     if(USE_CUDA)
     endif()
 endforeach(BENCH_SRC)

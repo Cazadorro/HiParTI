@@ -23,5 +23,6 @@ foreach(BENCH_SRC IN LISTS BENCH_SRCS)
 
     else()
         target_link_libraries("${BENCH_EXE}" PRIVATE HiParTI)
+#        set_property(TARGET "${BENCH_EXE}" PROPERTY  MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:DebugDLL>")
     endif()
 endforeach(BENCH_SRC)

@@ -2762,7 +2762,7 @@ int ptiOmpMTTKRPHiCOOKernelsBlocks_3D(
             ptiNnzIndex bptr_end = hitsr->bptr.data[b+1];
             /* Loop entries in a block */
             for(ptiIndex z=bptr_begin; z<bptr_end; ++z) {
-                
+
                 ptiIndex mode_i = (block_coord_mode << hitsr->sb_bits) + hitsr->einds[mode].data[z];
                 ptiIndex tmp_i_1 = (block_coord_1 << hitsr->sb_bits) + hitsr->einds[times_mat_index_1].data[z];
                 ptiIndex tmp_i_2 = (block_coord_2 << hitsr->sb_bits) + hitsr->einds[times_mat_index_2].data[z];
@@ -2771,7 +2771,7 @@ int ptiOmpMTTKRPHiCOOKernelsBlocks_3D(
                     #pragma omp atomic update
                     mvals[mode_i * stride + r] += entry * times_mat_1->values[tmp_i_1 * stride + r] * times_mat_2->values[tmp_i_2 * stride + r];
                 }
-                
+
             }   // End loop entries
         }   // End loop blocks
     }   // End loop kernels

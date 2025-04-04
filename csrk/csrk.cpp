@@ -10,7 +10,19 @@
 #define unlikely(x) __builtin_expect(!!(x), 0)
 #define likely(x) __builtin_expect(!!(x), 1)
 
+//This is needed because C++ standard committee made a giant mistake in not giving std::span the ::at() method...
+//https://stackoverflow.com/questions/63215796/how-do-you-do-bounds-checking-with-std-span
+template<class Container>
+auto& at(Container&& c, std::size_t pos){
+  if(pos >= c.size())
+    throw std::out_of_range("out of bounds");
+  return c[pos];
+}
+
+
 using namespace std;
+
+
 
 // Read the config file
 void readConfigFile(char *configFileName, string &kernelType,
@@ -931,10 +943,18 @@ void BAND_k::preprocessingForSpMV(CSRk_Graph &csrkGraph) {
         if (mask[i_mask] != 0) {
           root = i_mask;
 
-          rcm_reordering_g(numVertices, (int *)smallGraphs[i].r_vec,
-                           (int *)smallGraphs[i].c_vec,
-                           (int *)smallGraphs[i].degree, root, (int *)mask,
-                           (int *)ReverseGraphPerm, (int *)corsenedGraphPerm,
+          //TODO don't know why these were first allocated as uint32s and then used as int32s from this point onward..?
+          std::span<std::int32_t> r_vec_span(reinterpret_cast<int*>(smallGraphs[i].r_vec), smallGraphs[i].N + 1);
+          std::span<std::int32_t> c_vec_span(reinterpret_cast<int*>(smallGraphs[i].c_vec), smallGraphs[i].NNZ);
+          std::span<std::int32_t> degree_span(reinterpret_cast<int*>(smallGraphs[i].degree), smallGraphs[i].NNZ);
+          std::span<std::int32_t> mask_span(reinterpret_cast<int*>(mask), numVertices);
+          std::span<std::int32_t> reverseGraphPerm_span(reinterpret_cast<int*>(ReverseGraphPerm), numVertices);
+          std::span<std::int32_t> corsenedGraphPerm_span(reinterpret_cast<int*>(corsenedGraphPerm), numVertices);
+
+          rcm_reordering_g(numVertices, r_vec_span,
+                           c_vec_span,
+                           degree_span, root, mask_span,
+                           reverseGraphPerm_span, corsenedGraphPerm_span,
                            firstVtxinBFS, lastVtxinBFS, ccSize);
         }
       }
@@ -979,11 +999,16 @@ void BAND_k::preprocessingForSpMV(CSRk_Graph &csrkGraph) {
 
           if (mask[i_mask] != 0) {
             root = i_mask;
-
-            rcm_reordering_g(numVertices, (int *)smallGraphs[i].r_vec,
-                             (int *)smallGraphs[i].c_vec,
-                             (int *)smallGraphs[i].degree, root, (int *)mask,
-                             (int *)ReverseGraphPerm, (int *)corsenedGraphPerm,
+            std::span<std::int32_t> r_vec_span(reinterpret_cast<int*>(smallGraphs[i].r_vec), smallGraphs[i].N + 1);
+            std::span<std::int32_t> c_vec_span(reinterpret_cast<int*>(smallGraphs[i].c_vec), smallGraphs[i].NNZ);
+            std::span<std::int32_t> degree_span(reinterpret_cast<int*>(smallGraphs[i].degree), smallGraphs[i].NNZ);
+            std::span<std::int32_t> mask_span(reinterpret_cast<int*>(mask), numVertices);
+            std::span<std::int32_t> reverseGraphPerm_span(reinterpret_cast<int*>(ReverseGraphPerm), numVertices);
+            std::span<std::int32_t> corsenedGraphPerm_span(reinterpret_cast<int*>(corsenedGraphPerm), numVertices);
+            rcm_reordering_g(numVertices, r_vec_span,
+                             c_vec_span,
+                            degree_span, root, mask_span,
+                             reverseGraphPerm_span, corsenedGraphPerm_span,
                              firstVtxinBFS, lastVtxinBFS, ccSize);
           }
         }
@@ -1947,11 +1972,16 @@ void BAND_k::stsPreprocessingForHAND(CSRk_Graph &csrkGraph) {
 
         if (mask[i_mask] != 0) {
           root = i_mask;
-
-          rcm_reordering_g(numVertices, (int *)smallGraphs[i].r_vec,
-                           (int *)smallGraphs[i].c_vec,
-                           (int *)smallGraphs[i].degree, root, (int *)mask,
-                           (int *)ReverseGraphPerm, (int *)corsenedGraphPerm,
+          std::span<std::int32_t> r_vec_span(reinterpret_cast<int*>(smallGraphs[i].r_vec), smallGraphs[i].N + 1);
+          std::span<std::int32_t> c_vec_span(reinterpret_cast<int*>(smallGraphs[i].c_vec), smallGraphs[i].NNZ);
+          std::span<std::int32_t> degree_span(reinterpret_cast<int*>(smallGraphs[i].degree), smallGraphs[i].NNZ);
+          std::span<std::int32_t> mask_span(reinterpret_cast<int*>(mask), numVertices);
+          std::span<std::int32_t> reverseGraphPerm_span(reinterpret_cast<int*>(ReverseGraphPerm), numVertices);
+          std::span<std::int32_t> corsenedGraphPerm_span(reinterpret_cast<int*>(corsenedGraphPerm), numVertices);
+          rcm_reordering_g(numVertices, r_vec_span,
+                           c_vec_span,
+                           degree_span, root, mask_span,
+                           reverseGraphPerm_span, corsenedGraphPerm_span,
                            firstVtxinBFS, lastVtxinBFS, ccSize);
         }
       }
@@ -2297,16 +2327,17 @@ void BAND_k::stsPreprocessingWithMatching(CSRk_Graph &csrkGraph) {
  ***********                  RCM Related Functions            ****************
  * ****************************************************************************/
 
-int rcm_reordering_g(int num_verts, int *num_edges, int *adj_list,
-                     int *adj_degree, int root, int mask[],
-                     int oldToNewOrdering[], int newToOldOrdering[],
+int rcm_reordering_g(int num_verts, std::span<std::int32_t> num_edges, std::span<std::int32_t> adj_list,
+                     std::span<std::int32_t> adj_degree, int root, std::span<std::int32_t> mask,
+                     std::span<std::int32_t> oldToNewOrdering, std::span<std::int32_t> newToOldOrdering,
                      int &firstVtxinBFS, int &lastVtxinBFS, int &ccSize) {
 #ifdef DEBUG
   cout << "entering rcm_reordering_g" << endl;
 #endif
   int num_lvls = 0;
-  int *r_vec_lvlStruc = new int[num_verts + 1];
-  int *c_vec_lvlStruc = new int[num_verts + 1];
+  std::vector<int> r_vec_lvlStruc(num_verts + 1);
+   std::vector<int>  c_vec_lvlStruc(num_verts + 1);
+
 
   findPseudoPeripheralVertex(root, num_edges, adj_list, mask, num_lvls,
                              r_vec_lvlStruc, c_vec_lvlStruc);
@@ -2376,8 +2407,6 @@ int rcm_reordering_g(int num_verts, int *num_edges, int *adj_list,
 
   ccSize = ccSize + num_visited_verts;
 
-  delete[] r_vec_lvlStruc;
-  delete[] c_vec_lvlStruc;
 #ifdef DEBUG
   cout << "exiting rcm_reordering_g" << endl;
 #endif
@@ -2385,9 +2414,9 @@ int rcm_reordering_g(int num_verts, int *num_edges, int *adj_list,
 }
 
 // On return, root contains the psedo-peripheral vertex
-void findPseudoPeripheralVertex(int &root, int *r_vec, int *c_vec, int *mask,
-                                int &num_lvls, int *r_vec_lvlStruc,
-                                int *c_vec_lvlStruc) {
+void findPseudoPeripheralVertex(int &root, std::span<std::int32_t> r_vec, std::span<std::int32_t> c_vec, std::span<std::int32_t> mask,
+                                int &num_lvls, std::span<std::int32_t> r_vec_lvlStruc,
+                                std::span<std::int32_t> c_vec_lvlStruc) {
 
   int j, j1, k, ccSize, minDeg, numDeg, vertex, new_Levl;
 
@@ -2434,9 +2463,11 @@ void findPseudoPeripheralVertex(int &root, int *r_vec, int *c_vec, int *mask,
 // For the given root, it gives the rooted level structures, actual level is
 // returned level -1
 
-void findRootedLevelStructures(int root, int *r_vec, int *c_vec, int *mask,
-                               int &num_lvls, int *r_vec_lvlStruc,
-                               int *c_vec_lvlStruc) {
+void findRootedLevelStructures(int root, std::span<std::int32_t> r_vec, std::span<std::int32_t> c_vec, std::span<std::int32_t> mask,
+                               int &num_lvls, std::span<std::int32_t> r_vec_lvlStruc,
+                               std::span<std::int32_t> c_vec_lvlStruc) {
+
+
 
   int i, j, levelBegin, levelEnd, ccSize, levelSize, neighbor;
 
@@ -2621,13 +2652,19 @@ int rcm_reordering(int num_verts, int *num_edges, int *adj_list, int root,
                    int mask[], int oldToNewOrdering[], int newToOldOrdering[],
                    int &firstVtxinBFS, int &lastVtxinBFS, int &ccSize) {
 
+  if (true) {
+    std::cerr << "Should never be run, not used anywhere" << std::endl;
+    std::abort();
+  }
   int num_lvls = 0;
   std::vector<int> r_vec_lvlStruc(num_verts);
   std::vector<int> c_vec_lvlStruc(num_verts);
 
   // Find the source vertex
-  findPseudoPeripheralVertex(root, num_edges, adj_list, mask, num_lvls,
-                             r_vec_lvlStruc.data(), c_vec_lvlStruc.data());
+  //TODO doesn't fit in with std::span stuff because code that fills in other stuff isn't actually called.
+  // Should be uncommneted if actually used.
+  // findPseudoPeripheralVertex(root, num_edges, adj_list, mask, num_lvls,
+  //                            r_vec_lvlStruc, c_vec_lvlStruc);
 
   firstVtxinBFS = root;
 

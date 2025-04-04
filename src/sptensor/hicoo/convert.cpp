@@ -598,6 +598,8 @@ int ptiPreprocessSparseTensor(
     }
 
     //#pragma omp parallel for num_threads(tk)
+
+    fmt::println(stderr, "ABOUT TO SORT 3D");
 #pragma omp parallel for num_threads(1)
     for(ptiNnzIndex k=0; k<kptr->len - 1; ++k) {
         k_begin = kptr->data[k];

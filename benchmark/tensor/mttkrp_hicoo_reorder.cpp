@@ -16,6 +16,8 @@
     If not, see <http://www.gnu.org/licenses/>.
 */
 
+// #include <tracy/Tracy.hpp>
+
 #include "hicoo_utils.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -215,7 +217,10 @@ int main(int argc, char ** argv) {
             ptiGetRandomShuffledIndices(&tsr, map_inds);
         }
         else if (renumber == 4) {
+            auto thread_count = omp_get_num_threads();
+            omp_set_num_threads(1);
             orderitBandK(&tsr, map_inds, renumber, niters_renum);
+            omp_set_num_threads(thread_count);
             output_file.open("test_bandk_reorder_timing.txt", std::ios_base::app);
         }
         fflush(stdout);

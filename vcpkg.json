@@ -6,7 +6,11 @@
     "getopt",
     "boost-graph",
     "getopt-win32",
-    "czdr-bitutil"
+    "czdr-bitutil",
+    {
+      "name": "tracy",
+      "features": []
+    }
   ],
-  "builtin-baseline": "62aa44929954469878eb8fc562af706a8f5615a5"
+  "builtin-baseline": "e2e3f654bc45c28f2696ace32d66f28429bb3b28"
 }

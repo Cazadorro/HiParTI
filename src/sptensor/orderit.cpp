@@ -1,3 +1,5 @@
+
+// #include <tracy/Tracy.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
@@ -20,6 +22,7 @@
 #include <numeric>
 #include <vector>
 #include <span>
+
 /** END EXTRA **/
 
 /*Interface to everything in this file is orderit(.., ..)*/
@@ -1596,15 +1599,44 @@ std::vector<std::size_t> calculate_slice_column_bandk_permutation(const util::Tr
     col_ids[0] = 0;
     std::size_t accumulated_idx = 0;
     //generate CSR slice tensor.
+
+#ifdef ENABLE_SANITY_ASSERTIONS
+    if (transpose_bitfield.element_count() != transpose_bitfield.bit_count()) {
+        std::cerr << fmt::format("popcount {}, bit_count {}, element_count {}", transpose_bitfield.pop_count(), transpose_bitfield.bit_count(), transpose_bitfield.element_count()) << std::endl;
+        std::abort();
+    }
+#endif
+    // assert((false, "was attempting to debug this,for some reason doesn't actually have the correct accumulated index?"));
+    std::uint64_t last_index = 0;
     for (std::size_t row = 0; row < transpose_bitfield.width(); ++row) {
-        for (std::size_t col = 0; col < transpose_bitfield.width(); ++col) {
+        for (std::size_t col = 0; col < transpose_bitfield.width();) {
+            if (!transpose_bitfield.has_word(row, col)) {
+                //should properly skip col even if it goes over transpose_bitfield.width(),
+                //as the check will still be applied
+                //next iteration. //additionally need to make sure can handle case where not evenly divisible by 32.
+                col += util::Transpose2DBitfield::word_bit_count - (transpose_bitfield.row_col_to_triangular_linear(row, col) % util::Transpose2DBitfield::word_bit_count);
+                continue;
+            }
             if (transpose_bitfield.get(row, col)) {
+                if (col_ids.size() <= accumulated_idx) {
+                    std::cerr << fmt::format("popcount {}, bit_count {}, element_count {}", transpose_bitfield.pop_count(), transpose_bitfield.bit_count(), transpose_bitfield.element_count()) << std::endl;
+                    std::cerr << fmt::format("col_ids.size() {}, accumulated_idx {}, row : {}, col : {}", col_ids.size(), accumulated_idx, row, col) << std::endl;
+                    std::cerr << std::bitset<64>(transpose_bitfield.get_word(row, col)) << std::endl;
+                    std::abort();
+                }
                 col_ids[accumulated_idx] = col;
                 accumulated_idx += 1;
+
             }
+            col += 1; 
         }
         row_ptrs[row + 1] = accumulated_idx;
     }
+    if (accumulated_idx != transpose_nnz) {
+        std::cerr << fmt::format("popcount {}, bit_count {}, element_count {} accmulated_idx {}", transpose_bitfield.pop_count(), transpose_bitfield.bit_count(), transpose_bitfield.element_count(), accumulated_idx) << std::endl;
+        std::abort();
+    }
+
     //Meta data for bandk
     const char *kernelType = "SpMV";
     const char *corseningType = "HAND";
@@ -1693,20 +1725,38 @@ void orderBandK2(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const mode_
     std::vector<std::size_t> prev_column_permutation(square_slice_width);
     std::iota(prev_column_permutation.begin(), prev_column_permutation.end(), 0);
 
+    std::size_t reset_index = 0;
     for (std::size_t i = 0; i < nnz; ++i) {
         auto current_slice_indexes = extract_slice_indexes_at(i);
         // if we are starting a new slice, get current slice column permutation from previous slice and start a new one.
         if (current_slice_indexes != previous_slice_indexes) {
-
             bool valid_bandk_tensor = !transpose_bitfield.is_empty() && !transpose_bitfield.is_identity() &&
                                       transpose_bitfield.element_count() >= (square_slice_width + square_slice_width);
             if(valid_bandk_tensor) {
+                // TODO temporary measure to force diagonal
+                for (std::size_t j = 0; j < transpose_bitfield.width(); ++j ) {
+                    auto already_set = transpose_bitfield.test_and_set(j, j);
+                    if (!already_set) {
+                        transpose_nnz += 1;
+                    }
+                }
+
                 prev_column_permutation = calculate_slice_column_bandk_permutation(transpose_bitfield, transpose_nnz,
                                                                                    prev_column_permutation);
+                // for (std::size_t j = 0; j < transpose_bitfield.width(); ++j ) {
+                //     transpose_bitfield.reset(j, j);
+                // }
             }
+            // for (std::size_t j = reset_index; j < i; ++j) {
+            //     auto curr_row = coords[j][row_mode];
+            //     auto curr_col = coords[j][col_mode];
+            //     transpose_bitfield.reset(curr_row, curr_col);
+            // }
             transpose_bitfield.clear();
+            assert(transpose_bitfield.is_empty());
             transpose_nnz = 0;
             previous_slice_indexes = current_slice_indexes;
+            // reset_index = i;
         }
         auto curr_row = coords[i][row_mode];
         auto curr_col = coords[i][col_mode];
@@ -1722,7 +1772,19 @@ void orderBandK2(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const mode_
         }
     }
     //won't trigger last iteration with last frame, as difference won't be found.
-    prev_column_permutation = calculate_slice_column_bandk_permutation(transpose_bitfield, transpose_nnz, prev_column_permutation);
+    bool valid_bandk_tensor = !transpose_bitfield.is_empty() && !transpose_bitfield.is_identity() &&
+                          transpose_bitfield.element_count() >= (square_slice_width + square_slice_width);
+    if(valid_bandk_tensor) {
+        // TODO temporary measure to force diagonal
+        for (std::size_t i = 0; i < transpose_bitfield.width(); ++i ) {
+            auto already_set = transpose_bitfield.test_and_set(i, i);
+            if (!already_set) {
+                transpose_nnz += 1;
+            }
+        }
+        prev_column_permutation = calculate_slice_column_bandk_permutation(transpose_bitfield, transpose_nnz, prev_column_permutation);
+    }
+
 
     //Creating data from previous "order" function inside orderit.
     std::vector<std::uint32_t> cprm(prev_column_permutation.begin(), prev_column_permutation.end());
@@ -2091,7 +2153,6 @@ void orderitBandK(ptiSparseTensor * tsr, ptiIndex ** newIndices, int const renum
     /* checkEmptySlices(coords, nnz, nm, tsr->ndims); */
 
     if (renumber <= 4 && renumber != 2) {    /* Lexi-order renumbering */
-
         ptiIndex ** orgIds = (ptiIndex **) malloc(sizeof(ptiIndex*) * nm);
 
         for (m = 0; m < nm; m++)
@@ -2106,9 +2167,9 @@ void orderitBandK(ptiSparseTensor * tsr, ptiIndex ** newIndices, int const renum
         for (its = 0; its < iterations; its++)
         {
             printf("[Bandk-order] Optimizing the numbering for its %u\n", its+1);
-            for (m = 0; m < nm; m++)
+            for (m = 0; m < nm; m++) {
                 orderBandK2(coords, nnz, nm, tsr->ndims, m, orgIds);
-
+            }
             // fprintf(stdout, "\niter %u:\n", its);
             // for(ptiIndex m = 0; m < tsr->nmodes; ++m) {
             //     ptiDumpIndexArray(orgIds[m], tsr->ndims[m], stdout);

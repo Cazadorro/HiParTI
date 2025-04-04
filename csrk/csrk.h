@@ -160,17 +160,17 @@ int rcm_reordering(int num_verts, int *num_edges, int *adj_list, int root,
                    int mask[], int oldToNewOrdering[], int newToOldOrdering[],
                    int &firstVtxinBFS, int &lastVtxinBFS, int &ccSize);
 
-int rcm_reordering_g(int num_verts, int *num_edges, int *adj_list,
-                     int *adj_degree, int root, int mask[],
-                     int oldToNewOrdering[], int newToOldOrdering[],
+int rcm_reordering_g(int num_verts, std::span<std::int32_t>num_edges, std::span<std::int32_t>adj_list,
+                     std::span<std::int32_t>adj_degree, int root, std::span<std::int32_t> mask,
+                     std::span<std::int32_t> oldToNewOrdering, std::span<std::int32_t> newToOldOrdering,
                      int &firstVtxinBFS, int &lastVtxinBFS, int &ccSize);
 
-void findPseudoPeripheralVertex(int &root, int *r_vec, int *c_vec, int *mask,
-                                int &num_lvls, int *r_vec_lvlStruc,
-                                int *c_vec_lvlStruc);
-void findRootedLevelStructures(int root, int *r_vec, int *c_vec, int *mask,
-                               int &num_lvls, int *r_vec_lvlStruc,
-                               int *c_vec_lvlStruc);
+void findPseudoPeripheralVertex(int &root, std::span<std::int32_t>r_vec, std::span<std::int32_t>c_vec, std::span<std::int32_t>mask,
+                                int &num_lvls, std::span<std::int32_t>r_vec_lvlStruc,
+                               std::span<std::int32_t>c_vec_lvlStruc);
+void findRootedLevelStructures(int root, std::span<std::int32_t> r_vec, std::span<std::int32_t> c_vec, std::span<std::int32_t> mask,
+                               int &num_lvls, std::span<std::int32_t> r_vec_lvlStruc,
+                               std::span<std::int32_t> c_vec_lvlStruc);
 
 // int RCMonSupNodes(graph_t *g, graph_bigAndMapping *g_big);
 
