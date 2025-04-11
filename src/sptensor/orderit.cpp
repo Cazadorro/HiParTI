@@ -22,6 +22,7 @@
 #include <numeric>
 #include <vector>
 #include <span>
+#include <valarray>
 
 /** END EXTRA **/
 
@@ -1668,7 +1669,293 @@ std::vector<std::size_t> calculate_slice_column_bandk_permutation(const util::Tr
 }
 
 
+std::vector<std::size_t> calculate_slice_column_bandk_permutation(util::CsrK& transpose_csrk, const std::vector<std::size_t>& prev_column_permutation){
+
+
+    //Meta data for bandk
+    const char *kernelType = "SpMV";
+    const char *corseningType = "HAND";
+
+    //none
+    const char *orderingType = "";
+//    int k = 2;
+//    std::vector<int> supRowSizes = {1};
+    int k = 2;
+    std::vector<int> supRowSizes = {2};
+    //dummy values for "values"
+
+    std::vector<ptiValue> values(transpose_csrk.nnz() + 1, 1.0f);
+    CSRk_Graph A_mat(transpose_csrk.row_count(), transpose_csrk.row_count(), transpose_csrk.nnz(),
+                     transpose_csrk.row_ptrs.data(), transpose_csrk.col_ids.data(), values.data(), kernelType,
+                     orderingType, corseningType, false, k, supRowSizes.data());
+
+    //For now just ignore
+    try {
+        A_mat.putInCSRkFormat();
+    } catch (std::exception& e) {
+        std::cerr << fmt::format("Didn't work\n");
+        return prev_column_permutation;
+    }
+    assert(A_mat.getPermutation() != nullptr);
+    auto row_perm_span = std::span(A_mat.getPermutation(), transpose_csrk.row_count());
+
+    std::vector<std::size_t> next_column_permutation(prev_column_permutation.size());
+
+    //can be a smaller permutation?
+    assert(row_perm_span.size() <= next_column_permutation.size());
+    //update previous permutations.
+    for (std::size_t perm_idx = 0; perm_idx < prev_column_permutation.size(); ++perm_idx) {
+        next_column_permutation[perm_idx] = prev_column_permutation[row_perm_span[perm_idx]];
+    }
+    return next_column_permutation;
+}
+
+
 //coords = [xyz,xyz,xyz.... nnz = number of non zeros.  nm = number of modes. ndims = size of each mode. dim = chosen dim. orgIds = permutation change.
+struct Index2D {
+    std::uint32_t row;
+    std::uint32_t col;
+};
+[[nodiscard]]
+constexpr bool operator ==(Index2D lhs, Index2D rhs) {
+    return lhs.row == rhs.row && lhs.col == rhs.col;
+}
+[[nodiscard]]
+constexpr bool operator !=(Index2D lhs, Index2D rhs) {
+    return !(lhs == rhs);
+}
+[[nodiscard]]
+constexpr bool operator > (Index2D lhs, Index2D rhs) {
+    return lhs.row > rhs.row || ((lhs.row == rhs.row) && (lhs.col > rhs.col));
+}
+[[nodiscard]]
+constexpr bool operator < (Index2D lhs, Index2D rhs) {
+    return lhs.row < rhs.row || ((lhs.row == rhs.row) && (lhs.col < rhs.col));
+}
+[[nodiscard]]
+constexpr bool operator >= (Index2D lhs, Index2D rhs) {
+    return lhs == rhs || lhs > rhs;
+}
+[[nodiscard]]
+constexpr bool operator <= (Index2D lhs, Index2D rhs) {
+    return lhs == rhs || lhs < rhs;
+}
+//coords [x,y,z][x,y,z]
+/**
+ * Takes in COO of arbitrary dimension and attempts to directly out put the list of coordinates in order according to
+ * slice_modes, row_mode, col_mode, where slice_mode would be the combination of all modes that aren't row or col.
+ * Then outputs each slice with the set of row,col coordinates.
+ * @param coords
+ * @param nnz
+ * @param slice_count
+ * @param mode_sizes
+ * @param col_mode
+ * @param row_mode
+ * @return
+ */
+std::vector<std::vector<Index2D>> extractSortedSlices(ptiIndex ** coords,  ptiNnzIndex nnz,  ptiIndex slice_count, std::span<const ptiIndex> mode_sizes, ptiIndex col_mode, ptiIndex row_mode) {
+    //TODO may make more sense to make this a hash table incase number of resident slices aren't that large.
+    std::vector<std::size_t> slice_lengths(slice_count, 0);
+
+    //TODO can either merge all non row/col indexes into slice index, or merge into row index (not col index).
+
+    auto mode_count = mode_sizes.size();
+    auto row_count = mode_sizes[row_mode];
+    auto col_count = mode_sizes[col_mode];
+    auto transpose_symmetric_width = std::max(static_cast<std::size_t>(row_count), static_cast<std::size_t>(col_count));
+    //handles generic multi-dimensional to-linear indexing, as slice index is made up of every index but the row and col index.
+    std::vector<std::size_t> mode_accum_multipliers;
+    std::vector<std::size_t> mode_multiplier_index;
+    for (std::int32_t mode = (mode_count - 1); mode >= 0; --mode) {
+        if(mode != col_mode && mode != row_mode) {
+            mode_multiplier_index.push_back(mode_accum_multipliers.size());
+            if (mode_accum_multipliers.empty()) {
+                mode_accum_multipliers.push_back(1);
+            }
+            mode_accum_multipliers.push_back(mode_sizes[mode] * mode_accum_multipliers.back());
+
+        }else {
+            mode_multiplier_index.push_back(0);
+        }
+    }
+
+    //for every value in COO, increment the index of the given COO element into the appropriate slice "slot" in
+    //slice_lengths.  This accumulates the total sizes we need to reserve for each slice,
+    //may have duplicates but this will be handled later
+    for (std::size_t i = 0; i < nnz; ++i) {
+        auto slice_index = 0;
+        for (std::size_t mode = 0; mode < mode_count; ++mode) {
+            if(mode != col_mode && mode != row_mode){
+                slice_index += mode_accum_multipliers[mode_multiplier_index[mode]] * coords[i][mode];
+            }
+        }
+        if (slice_index >= slice_count) {
+            std::cout << fmt::format("{} vs {}", slice_index, slice_count) << std::endl;
+            std::abort();
+        }
+        auto row = coords[i][row_mode];
+        auto col = coords[i][col_mode];
+        //TODO use atomics if doing omp stuff.
+        // figures out the sizes of each slice, as in the number of actual elements per slice.
+        slice_lengths[slice_index] += 1;
+        //accounting for transpose.
+        if (row != col) {
+            slice_lengths[slice_index] += 1;
+        }
+    }
+    //accounting for added diagonals.
+    for (auto& slice_length : slice_lengths) {
+        slice_length += transpose_symmetric_width;
+    }
+
+    //now finally reserving the space for each slice.
+    std::vector<std::vector<Index2D>> slices(slice_lengths.size());
+    for (std::size_t i = 0; i < slice_lengths.size(); ++i) {
+        slices[i].reserve(slice_lengths[i]);
+    }
+
+    //like when we accumulated the sizes of each slice, but this time we actually insert values in, no need to resize
+    //because we already calculated the sizes of each.
+    for (std::size_t i = 0; i < nnz; ++i) {
+        auto slice_index = 0;
+        for (std::size_t mode = 0; mode < mode_count; ++mode) {
+            if(mode != col_mode && mode != row_mode){
+                slice_index += mode_accum_multipliers[mode_multiplier_index[mode]] * coords[i][mode];
+            }
+        }
+        auto row = coords[i][row_mode];
+        auto col = coords[i][col_mode];
+        //TODO use atomics if doing omp stuff.
+        // figures out the sizes of each slice, as in the number of actual elements per slice.
+        slices[slice_index].push_back(Index2D{row, col});
+        //accounting for transpose.
+        if (row != col) {
+            slices[slice_index].push_back(Index2D{col, row});
+        }
+    }
+    //TODO add diagonals, but may no longer be needed.
+    for (auto& slice : slices) {
+        for (std::uint32_t i = 0; i < transpose_symmetric_width; ++i) {
+            slice.push_back(Index2D{i, i});
+        }
+    }
+
+    //TODO can now be parralelized.
+    for (std::size_t i = 0; i < slices.size(); ++i) {
+        std::sort(slices[i].begin(), slices[i].end());
+    }
+
+    return slices;
+}
+
+/**
+ * Re-orders coords and sends the permutation through orgIds based on an arbitrary tensor split up into "slices" with a "chosen_mode"
+ * as the column mode.
+ * @param coords (coordinates of tensor in [x,y,z][x,y,z]... form
+ * @param nnz number of non zeros
+ * @param mode_count number of modes
+ * @param mode_sizes the array of sizes of each mode (for example, a 4x5x6 tensor would have mode_sizes = [4,5,6])
+ * @param chosen_mode the chosen column mode
+ * @param orgIds the original *and* returned permutation for each dimension.
+ */
+void orderBandK3(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const mode_count, ptiIndex * mode_sizes, ptiIndex const chosen_mode, ptiIndex ** orgIds) {
+    assert((mode_count != 1, "Currently expects mode count to be more than 1"));
+
+    ptiIndex col_mode = chosen_mode;
+    ptiIndex row_mode = (chosen_mode + 1) % mode_count;
+
+    ptiIndex col_size = mode_sizes[col_mode];
+    ptiIndex row_size = mode_sizes[row_mode];
+
+    //other modes that aren't col_mode or row_mode.
+    std::vector<ptiIndex> other_modes;
+    ptiIndex slice_count = 1;
+    other_modes.reserve(mode_count - 2);
+    for (std::size_t mode = 0; mode < mode_count; ++mode) {
+        if (mode != col_mode && mode != row_mode) {
+            other_modes.push_back(mode);
+            slice_count *= mode_sizes[mode];
+        }
+    }
+
+    //extract slices where each slice internally is sorted.
+    auto sorted_slices = extractSortedSlices(coords, nnz, slice_count, std::span(mode_sizes, mode_count), col_mode, row_mode);
+    auto square_slice_width = std::max(row_size, col_size);
+    //permutation used to re-order columns at the end, starts out 0->slice_width
+    // then is reordered so that it can be used to directly index into the original COO axis.
+    std::vector<std::size_t> prev_column_permutation(square_slice_width);
+    std::iota(prev_column_permutation.begin(), prev_column_permutation.end(), 0);
+    std::size_t permutations_entered = 0;
+    for (auto& sorted_slice : sorted_slices) {
+        //TODO move outside to avoid re-allocation?
+        util::CsrK csr_slice;
+        csr_slice.col_ids.reserve(sorted_slice.size());
+        Index2D last_index = {};
+        for (std::size_t i = 0; i < sorted_slice.size(); ++i) {
+            auto index = sorted_slice[i];
+            if (i != 0) {
+                //duplicates are possible, but because sorted, we can just move to the next.
+                if (index == last_index) {
+                    continue;
+                }
+            }
+            csr_slice.inorder_append(index.row, index.col);
+            last_index = index;
+        }
+        csr_slice.append_last_row();
+
+        csr_slice.validate();
+        //csr_slice now has every value, ignore empty csr slice and nnz too small.
+        if (csr_slice.nnz() != 0 && csr_slice.nnz() > (csr_slice.row_count()*2)) {
+            permutations_entered += 1;
+            prev_column_permutation = calculate_slice_column_bandk_permutation(csr_slice, prev_column_permutation);
+        }
+    }
+    std::cerr << "Permutations Entered = " << permutations_entered << std::endl;
+
+
+    //Creating data from previous "order" function inside orderit.
+    std::vector<std::uint32_t> cprm(prev_column_permutation.begin(), prev_column_permutation.end());
+
+    //TODO For now, just remove values which have a source permutation index over the size of the number of cols,
+    // when we verify this actually runs correctly, then we can better handle not harming the ordering up of all
+    // down wind column indexes.
+    std::erase_if(cprm, [col_size](auto value){
+        return value > col_size - 1;
+    });
+#ifdef TEST_COO_ORDER_OUTPUT
+    if(cprm.size() != col_size){
+        for(auto value : cprm){
+            fmt::println(stderr, "{}", value);
+        }
+        fmt::println(stderr, "{} vs {}", cprm.size(), col_size);
+    }
+#endif
+    assert(cprm.size() == col_size);
+    //need to move it *back* into being 1 based.
+    for(auto& value : cprm){
+        value += 1;
+    }
+    //suppposed to be 1 larger.
+    cprm.insert(cprm.begin(), 0);
+
+    //At this point, this is pretty much how HiCOO did things, so not changing
+    auto invcprm = std::vector<ptiIndex>(mode_sizes[chosen_mode]+1);
+    auto saveOrgIds = std::vector<ptiIndex>(mode_sizes[chosen_mode]+1);
+
+    /* update orgIds and modify coords */
+    for (std::size_t c=0; c < mode_sizes[chosen_mode]; c++){
+        invcprm[cprm[c+1]-1] = c;
+        saveOrgIds[c] = orgIds[chosen_mode][c];
+    }
+    for (std::size_t c=0; c < mode_sizes[chosen_mode]; c++) {
+        orgIds[chosen_mode][c] = saveOrgIds[cprm[c + 1] - 1];
+    }
+    /*rename the dim component of nonzeros*/
+    for (std::size_t z = 0; z < nnz; z++) {
+        coords[z][chosen_mode] = invcprm[coords[z][chosen_mode]];
+    }
+}
 
 /**
  * Re-orders coords and sends the permutation through orgIds based on an arbitrary tensor split up into "slices" with a "chosen_mode"
@@ -1699,6 +1986,7 @@ void orderBandK2(ptiIndex ** coords, ptiNnzIndex const nnz, ptiIndex const mode_
             slice_count *= mode_sizes[mode];
         }
     }
+
     //sort the slices to we can index them in sequence.
     sortCoordsBySlice(coords, nnz, mode_count, col_mode, row_mode);
     //extract the vector of indices that represent the non row_mode/col_mode indices for the given index in coords
@@ -2168,7 +2456,7 @@ void orderitBandK(ptiSparseTensor * tsr, ptiIndex ** newIndices, int const renum
         {
             printf("[Bandk-order] Optimizing the numbering for its %u\n", its+1);
             for (m = 0; m < nm; m++) {
-                orderBandK2(coords, nnz, nm, tsr->ndims, m, orgIds);
+                orderBandK3(coords, nnz, nm, tsr->ndims, m, orgIds);
             }
             // fprintf(stdout, "\niter %u:\n", its);
             // for(ptiIndex m = 0; m < tsr->nmodes; ++m) {

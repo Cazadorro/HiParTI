@@ -63,62 +63,100 @@ namespace util {
 
     class CsrK {
     public:
-        void clear() {
+        inline void clear() {
             row_ptrs.clear();
-            row_ptrs = {0};
             col_ids.clear();
         }
 
         [[nodiscard]]
-        std::size_t row_count() const{
+        inline std::size_t row_count() const{
             return (row_ptrs.size() -1);
         }
         [[nodiscard]]
-        std::size_t nnz() const{
+        inline std::size_t nnz() const{
             return col_ids.size();
         }
+        inline void inorder_append(std::uint32_t row, std::uint32_t col) {
+            //should never happen.
+            if ( (row + 1) < (row_ptrs.size()) ) {
+                std::cout << fmt::format("row {} vs row_count {}\n", row, row_count()) << std::endl;
+                std::abort();
+            }
+            if (row_ptrs.size() < (row + 1)) {
+                //for all skipped rows until inserted one.
+                for (std::size_t i = row_ptrs.size(); i < (row + 1); ++i) {
+                    row_ptrs.push_back(col_ids.size());
+                }
+            }
 
-        std::vector<std::uint32_t> row_ptrs ={0};
+
+            col_ids.push_back(col);
+        }
+        inline void append_last_row() {
+            row_ptrs.push_back(col_ids.size());
+        }
+
+        inline void validate() {
+            if (row_ptrs.back() != nnz()) {
+                throw std::runtime_error("Row ptr max is not equal to nnz");
+            }
+            for (std::size_t i = 1; i < row_ptrs.size(); ++i) {
+                if (!(row_ptrs[i] > row_ptrs[i - 1])) {
+                    throw std::runtime_error("Row ptr unexpected difference");
+                }
+            }
+            for (std::size_t i = 0; i < row_ptrs.size() - 1; ++i) {
+                for (std::size_t j = row_ptrs[i]; j < row_ptrs[i + 1] - 1; ++j) {
+                    if (!(col_ids[j] < col_ids[j+1])) {
+                        throw std::runtime_error("Row ptr unexpected difference");
+                    }
+                }
+            }
+        }
+
+        std::vector<std::uint32_t> row_ptrs;
         std::vector<std::uint32_t> col_ids;
     };
+
+
     class CsrKSymmetric {
     public:
 
-        static CsrK merge(const CsrK& lhs, const CsrK& rhs) {
-            CsrK merged;
-            auto max_row_size = std::max(lhs.row_ptrs.size(), rhs.row_ptrs.size());
-            std::size_t lhs_idx = 0;
-            std::size_t rhs_idx = 0;
-            std::size_t lhs_col_id = 0;
-            std::size_t rhs_col_id = 0;
-            std::size_t last_lhs_segment = (lhs.row_ptrs.size() - 1);
-            std::size_t last_rhs_segment = (rhs.row_ptrs.size() - 1);
-            while ((lhs_idx < (lhs.row_ptrs.size() - 1)) || (rhs_idx < (rhs.row_ptrs.size() - 1))){
-
-                bool valid_lhs_segment = (lhs_idx < last_lhs_segment) && (lhs.row_ptrs[lhs_idx] != lhs.row_ptrs[lhs_idx + 1]);
-                bool valid_rhs_segment = (rhs_idx < last_rhs_segment) && (lhs.row_ptrs[rhs_idx] != lhs.row_ptrs[rhs_idx + 1]);
-
-                if (!valid_lhs_segment) {
-
-                }
-
-                //if i is not at the last rle column segment, and segment not empty
-                bool valid_lhs_segment = (i < last_column_segment) && (lhs.row_ptrs[i] != lhs.row_ptrs[i + 1]);
-                bool valid_rhs_segment = (i < last_column_segment) && (lhs.row_ptrs[i] != lhs.row_ptrs[i + 1]);
-                if ((i < last_column_segment) && (lhs.row_ptrs[i] != lhs.row_ptrs[i + 1])) {
-
-                }
-            }
-            for (std::size_t i = 0; i <max_row_size -1; ++i) {
-                std::size_t last_column_segment = (lhs.row_ptrs.size() - 1);
-                //if i is not at the last rle column segment, and segment not empty
-                bool valid_lhs_segment = (i < last_column_segment) && (lhs.row_ptrs[i] != lhs.row_ptrs[i + 1]);
-                bool valid_rhs_segment = (i < last_column_segment) && (lhs.row_ptrs[i] != lhs.row_ptrs[i + 1]);
-                if ((i < last_column_segment) && (lhs.row_ptrs[i] != lhs.row_ptrs[i + 1])) {
-
-                }
-            }
-        }
+        // static CsrK merge(const CsrK& lhs, const CsrK& rhs) {
+        //     CsrK merged;
+        //     auto max_row_size = std::max(lhs.row_ptrs.size(), rhs.row_ptrs.size());
+        //     std::size_t lhs_idx = 0;
+        //     std::size_t rhs_idx = 0;
+        //     std::size_t lhs_col_id = 0;
+        //     std::size_t rhs_col_id = 0;
+        //     std::size_t last_lhs_segment = (lhs.row_ptrs.size() - 1);
+        //     std::size_t last_rhs_segment = (rhs.row_ptrs.size() - 1);
+        //     while ((lhs_idx < (lhs.row_ptrs.size() - 1)) || (rhs_idx < (rhs.row_ptrs.size() - 1))){
+        //
+        //         bool valid_lhs_segment = (lhs_idx < last_lhs_segment) && (lhs.row_ptrs[lhs_idx] != lhs.row_ptrs[lhs_idx + 1]);
+        //         bool valid_rhs_segment = (rhs_idx < last_rhs_segment) && (lhs.row_ptrs[rhs_idx] != lhs.row_ptrs[rhs_idx + 1]);
+        //
+        //         if (!valid_lhs_segment) {
+        //
+        //         }
+        //
+        //         //if i is not at the last rle column segment, and segment not empty
+        //         bool valid_lhs_segment = (i < last_column_segment) && (lhs.row_ptrs[i] != lhs.row_ptrs[i + 1]);
+        //         bool valid_rhs_segment = (i < last_column_segment) && (lhs.row_ptrs[i] != lhs.row_ptrs[i + 1]);
+        //         if ((i < last_column_segment) && (lhs.row_ptrs[i] != lhs.row_ptrs[i + 1])) {
+        //
+        //         }
+        //     }
+        //     for (std::size_t i = 0; i <max_row_size -1; ++i) {
+        //         std::size_t last_column_segment = (lhs.row_ptrs.size() - 1);
+        //         //if i is not at the last rle column segment, and segment not empty
+        //         bool valid_lhs_segment = (i < last_column_segment) && (lhs.row_ptrs[i] != lhs.row_ptrs[i + 1]);
+        //         bool valid_rhs_segment = (i < last_column_segment) && (lhs.row_ptrs[i] != lhs.row_ptrs[i + 1]);
+        //         if ((i < last_column_segment) && (lhs.row_ptrs[i] != lhs.row_ptrs[i + 1])) {
+        //
+        //         }
+        //     }
+        // }
 
         static CsrK create_symmetric(const CsrK& lhs, std::size_t diagonal_count) {
             CsrK merged;

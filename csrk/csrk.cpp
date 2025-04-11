@@ -1302,7 +1302,7 @@ void BAND_k::handCoarsen(int level, int super_node_nnz, CSRk_Graph &csrkGraph) {
 
   unsigned int *r_start_coarsened = detail::aligned_alloc_of<unsigned int>(64,  (num_coarse_vtxs + 1));
   //(unsigned int *) hbw_malloc((num_coarse_vtxs+1)*sizeof(unsigned int));
-  unsigned int *orgVtx_sup_map = new unsigned int[N];
+  std::vector<unsigned int> orgVtx_sup_map(N);
 
   r_start_coarsened[0] = 0;
 
@@ -1354,10 +1354,10 @@ void BAND_k::handCoarsen(int level, int super_node_nnz, CSRk_Graph &csrkGraph) {
     }
   }
 
-  unsigned int *coarse_r_vec = new unsigned int[num_coarse_vtxs + 1];
+  // unsigned int *coarse_r_vec = new unsigned int[num_coarse_vtxs + 1];
+  std::vector<unsigned int> coarse_r_vec(num_coarse_vtxs + 1);
   unsigned int cumulative_index = 0;
 
-  auto coarse_r_vec_view = std::span(coarse_r_vec, num_coarse_vtxs + 1);
   coarse_r_vec[0] = 0;
 
   for (unsigned int i_c_vtx = 0; i_c_vtx < num_coarse_vtxs; i_c_vtx++) {
@@ -1367,9 +1367,10 @@ void BAND_k::handCoarsen(int level, int super_node_nnz, CSRk_Graph &csrkGraph) {
   }
   adj_count.at(num_coarse_vtxs) = coarse_r_vec[num_coarse_vtxs];
 
-  unsigned int *coarse_c_vec = new unsigned int[cumulative_index];
+  std::vector<unsigned int> coarse_c_vec(cumulative_index);
+  // unsigned int *coarse_c_vec = new unsigned int[cumulative_index];
 
-  auto coarse_c_vec_view = std::span(coarse_c_vec,cumulative_index);
+  //auto coarse_c_vec_view = std::span(coarse_c_vec,cumulative_index);
   for (unsigned int i_c_vtx = 0; i_c_vtx < num_coarse_vtxs; i_c_vtx++) {
     for (unsigned int i_orgId = r_start_coarsened[i_c_vtx];
          i_orgId < r_start_coarsened[i_c_vtx + 1]; i_orgId++) {
@@ -1394,8 +1395,8 @@ void BAND_k::handCoarsen(int level, int super_node_nnz, CSRk_Graph &csrkGraph) {
     }
   }
 
-  std::vector<unsigned int> adj_vector(coarse_c_vec,
-                                       coarse_c_vec + cumulative_index);
+  std::vector<unsigned int> adj_vector(coarse_c_vec.begin(),
+                                       coarse_c_vec.begin() + cumulative_index);
 
 // The neighbors are already in sorted order -- WE DON"T NEED THIS --TEST THIS
 #pragma omp parallel for schedule(static)
@@ -1415,7 +1416,7 @@ void BAND_k::handCoarsen(int level, int super_node_nnz, CSRk_Graph &csrkGraph) {
   distinct_neighbor.at(0) = 0;
 
   for (unsigned int i = 0; i < num_coarse_vtxs; i++) {
-    prev_neighbor = adj_vector.at(coarse_r_vec[i]);
+    prev_neighbor = adj_vector.at(coarse_r_vec.at(i));
     degree = 1;
     distinct_adj.at(adj_index) = prev_neighbor;
     adj_index++;
@@ -1462,10 +1463,10 @@ void BAND_k::handCoarsen(int level, int super_node_nnz, CSRk_Graph &csrkGraph) {
 //  delete[] adj_degree;
 //  delete[] distinct_neighbor;
 
-  delete[] coarse_r_vec;
-  delete[] coarse_c_vec;
+  //delete[] coarse_r_vec;
+ // delete[] coarse_c_vec;
 //  delete[] adj_count;
-  delete[] orgVtx_sup_map;
+//  delete[] orgVtx_sup_map;
 
 #ifdef DEBUG
   cout << "BAND_k::handCoarsen completed" << endl;
